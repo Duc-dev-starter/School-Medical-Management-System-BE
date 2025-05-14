@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { RegisterUserDto } from './dto/register.dto';
 import { UpdateUserDTO } from './dto/update.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/common/enums/role.enum';
@@ -16,22 +15,6 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     return this.userModel.find({ isDeleted: false }).exec();
-  }
-
-  async registerUser(registerUserDto: RegisterUserDto): Promise<User> {
-    const { username, email, password, fullName, phone, role, image } = registerUserDto;
-
-    const createdUser = new this.userModel({
-      username,
-      email,
-      password,
-      fullName,
-      phone,
-      role,
-      image,
-    });
-
-    return createdUser.save(); // Đã có hook hash password
   }
 
   async findUsersByRole(role: Role): Promise<User[]> {

@@ -18,10 +18,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from 'src/common/enums/role.enum';
-import { RegisterUserDto } from './dto/register.dto';
-import { UpdateUserDTO } from './dto/update.dto';
 import { UsersService } from './users.service';
 import { User } from './users.schema';
+import { UpdateUserDTO } from './dto';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -34,15 +33,6 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Danh sách người dùng trả về thành công', type: [User] })
   async findAll() {
     return this.usersService.findAll();
-  }
-
-  @Post('register')
-  @ApiOperation({ summary: 'Đăng ký người dùng mới' })
-  @ApiBody({ type: RegisterUserDto })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công', type: User })
-  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
-  async register(@Body() registerUserDto: RegisterUserDto): Promise<User> {
-    return this.usersService.registerUser(registerUserDto);
   }
 
   @Get('role/:role')
