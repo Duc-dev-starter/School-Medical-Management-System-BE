@@ -54,7 +54,7 @@ export class UsersService {
   }
 
   async validateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.userModel.findOne({ username, isDeleted: false }).exec();
+    const user = await this.userModel.findOne({ username, isDeleted: false }).lean().exec();
     if (user && await bcrypt.compare(password, user.password)) {
       return user;
     }

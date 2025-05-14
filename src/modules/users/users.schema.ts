@@ -1,15 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 import { Role } from 'src/common/enums';
 
 export type UserDocument = User & Document;
 
 @Schema({ timestamps: true }) // tạo createdAt, updatedAt tự động
 export class User {
-    @Prop({ unique: true, default: () => uuidv4() })
-    id: string;
+    _id?: string;
 
     @Prop({ unique: true, required: true })
     username: string;
@@ -31,6 +29,9 @@ export class User {
 
     @Prop({ enum: Role, default: Role.Student })
     role: Role;
+
+    @Prop({ default: false })
+    isDeleted: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -4,6 +4,7 @@ import { LoginDTO } from './dto/login.dto';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { RegisterDTO } from './dto/register.dto';
+import { formatResponse } from 'src/utils';
 
 @ApiTags('Auth')
 @Controller('api/auth')
@@ -12,16 +13,18 @@ export class AuthController {
 
   @Post('login')
   @Public()
-  @ApiBody({ type: LoginDTO }) // Định nghĩa DTO cho body
+  @ApiBody({ type: LoginDTO })
   async login(@Body() loginDTO: LoginDTO) {
     console.log(loginDTO);
-    return this.authService.login(loginDTO);
+    const response = await this.authService.login(loginDTO);
+    return formatResponse(response);
   }
 
   @Post('register')
   @Public()
-  @ApiBody({ type: RegisterDTO }) // Định nghĩa DTO cho body
+  @ApiBody({ type: RegisterDTO })
   async register(@Body() registerDTO: RegisterDTO) {
-    return this.authService.register(registerDTO);
+    const response = await this.authService.register(registerDTO);
+    return formatResponse(response);
   }
 }

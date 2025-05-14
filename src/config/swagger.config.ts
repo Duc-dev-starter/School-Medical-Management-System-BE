@@ -4,7 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 export class SwaggerConfig {
   static setupSwagger(app: INestApplication): void {
     const config = new DocumentBuilder()
-      .setTitle('Nest Care')
+      .setTitle('SMMS')
       .setDescription('API for managing users and authentication')
       .setVersion('1.0')
       .addBearerAuth() // Add Bearer Token support

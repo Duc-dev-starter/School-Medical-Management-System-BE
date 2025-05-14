@@ -33,7 +33,12 @@ export class RegisterUserDto {
   @IsNotEmpty()
   phone: string;
 
-  @ApiProperty({ enum: Role, description: 'Vai trò người dùng' , example:'user, admin, nurse, doctor'})
+  @ApiProperty({ enum: Role, description: 'Vai trò người dùng', example: 'user, admin, nurse, doctor' })
   @IsEnum(Role)
-  role: Role; 
+  role: Role;
+
+  @ApiProperty({ default: false, description: 'Trạng thái xóa người dùng' })
+  @IsOptional()
+  isDeleted?: boolean;
+
 }
