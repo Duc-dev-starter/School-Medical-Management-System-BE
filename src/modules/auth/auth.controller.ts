@@ -5,7 +5,6 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { formatResponse } from 'src/utils';
 import { User } from '../users/users.schema';
-import { RegisterDTO } from './dto/register.dto';
 
 @ApiTags('Auth')
 @Controller('api/auth')
@@ -24,14 +23,5 @@ export class AuthController {
     return formatResponse(response);
   }
 
-  @Post('register')
-  @ApiOperation({ summary: 'Đăng ký người dùng mới' })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công', type: User })
-  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
-  @Public()
-  @ApiBody({ type: RegisterDTO })
-  async register(@Body() registerDTO: RegisterDTO) {
-    const response = await this.authService.register(registerDTO);
-    return formatResponse(response);
-  }
+
 }

@@ -1,2 +1,4 @@
+import { RegisterDTO } from './register.dto';
 import { UpdateUserDTO } from './update.dto';
-export { UpdateUserDTO }
+import { SearchUserDTO } from './search.dto';
+export { UpdateUserDTO, RegisterDTO, SearchUserDTO }

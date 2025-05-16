@@ -7,11 +7,6 @@ export type UserDocument = HydratedDocument<User>;
 
 @Schema({ timestamps: true }) // tạo createdAt, updatedAt tự động
 export class User {
-    _id?: string;
-
-    @Prop({ unique: true, required: true })
-    username: string;
-
     @Prop({ required: true })
     password: string;
 
@@ -24,7 +19,7 @@ export class User {
     @Prop()
     image: string;
 
-    @Prop({ unique: true, required: true })
+    @Prop({ required: true })
     phone: string;
 
     @Prop({ enum: Role, default: Role.Student })

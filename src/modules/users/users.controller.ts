@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -20,7 +19,11 @@ import {
 import { Role } from 'src/common/enums/role.enum';
 import { UsersService } from './users.service';
 import { User } from './users.schema';
-import { UpdateUserDTO } from './dto';
+import { SearchUserDTO, UpdateUserDTO } from './dto';
+import { Public } from 'src/common/decorators/public.decorator';
+import { RegisterDTO } from './dto/register.dto';
+import { formatResponse } from 'src/utils';
+import { UserWithoutPassword } from './users.interface';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -28,55 +31,87 @@ import { UpdateUserDTO } from './dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
-  @Get()
-  @ApiOperation({ summary: 'Lấy danh sách toàn bộ người dùng' })
-  @ApiResponse({ status: 200, description: 'Danh sách người dùng trả về thành công', type: [User] })
-  async findAll() {
-    return this.usersService.findAll();
+
+  @Post('register')
+  @ApiOperation({ summary: 'Đăng ký người dùng mới' })
+  @ApiResponse({
+    status: 201,
+    description: 'Đăng ký thành công',
+    type: User,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dữ liệu đầu vào không hợp lệ hoặc email đã tồn tại',
+    content: {
+      'application/json': {
+        examples: {
+          EmailExists: {
+            summary: 'Email đã tồn tại',
+            value: {
+              success: false,
+              message: 'Email already exists',
+              errors: [],
+            },
+          },
+          InvalidPhone: {
+            summary: 'Số điện thoại không hợp lệ',
+            value: {
+              success: false,
+              message: 'Validation failed',
+              errors: [
+                {
+                  field: 'phone',
+                  message: 'phone must be a valid phone number',
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
+  @Public()
+  @ApiBody({ type: RegisterDTO })
+  async create(@Body() payload: RegisterDTO) {
+
+    const item = await this.usersService.create(payload);
+
+    return formatResponse<UserWithoutPassword>(item);
   }
 
-  @Get('role/:role')
-  @ApiOperation({ summary: 'Lấy người dùng theo vai trò' })
-  @ApiParam({ name: 'role', enum: Role, description: 'Vai trò người dùng' })
-  @ApiResponse({ status: 200, description: 'Danh sách người dùng theo vai trò', type: [User] })
-  async getUsersByRole(@Param('role') role: Role) {
-    return this.usersService.findUsersByRole(role);
-  }
 
   @Put(':id')
   @ApiOperation({ summary: 'Cập nhật thông tin người dùng' })
   @ApiParam({ name: 'id', description: 'ID người dùng' })
   @ApiBody({ type: UpdateUserDTO })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công', type: User })
-  async update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDTO,
-  ): Promise<User> {
-    return this.usersService.update(id, updateUserDto);
+  async updateUser(@Param('id') id: string, @Body() payload: UpdateUserDTO) {
+    const item = await this.usersService.updateUser(id, payload);
+    return formatResponse<User>(item);
   }
 
 
   @Get('search/:pageNum/:pageSize')
+  @Public()
   @ApiOperation({ summary: 'Tìm kiếm người dùng có phân trang' })
   @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
   @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
   @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
   @ApiQuery({ name: 'role', required: false, enum: Role, description: 'Lọc theo vai trò' })
   @ApiResponse({ status: 200, description: 'Danh sách người dùng phù hợp với tìm kiếm' })
-  async searchUsers(
-    @Param('pageNum') pageNum: string,
-    @Param('pageSize') pageSize: string,
-    @Query('query') query?: string,
-    @Query('role') role?: Role,
-  ) {
-    return this.usersService.searchUsers(Number(pageNum), Number(pageSize), query, role);
+  async searchUsers(@Query() params: SearchUserDTO) {
+    const result = await this.usersService.searchUsers(params);
+    return result;
   }
 
+
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: 'Lấy thông tin người dùng theo ID' })
   @ApiParam({ name: 'id', description: 'ID người dùng' })
   @ApiResponse({ status: 200, description: 'Thông tin người dùng', type: User })
-  async findOne(@Param('id') id: string): Promise<User> {
-    return this.usersService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const item = await this.usersService.findOne(id);
+    return formatResponse<User>(item);
   }
 }

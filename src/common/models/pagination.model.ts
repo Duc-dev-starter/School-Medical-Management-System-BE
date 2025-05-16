@@ -24,12 +24,11 @@ export class PaginationResponseModel {
     pageNum: number = PAGINATION.pageNum,
     pageSize: number = PAGINATION.pageSize,
     totalItems: number = PAGINATION.totalItems,
-    totalPages: number = PAGINATION.totalPages,
   ) {
     this.pageNum = pageNum;
     this.pageSize = pageSize;
     this.totalItems = totalItems;
-    this.totalPages = totalPages;
+    this.totalPages = pageSize > 0 ? Math.ceil(totalItems / pageSize) : 0;
   }
 
   public pageNum: number;

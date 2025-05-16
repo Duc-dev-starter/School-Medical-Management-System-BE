@@ -1,67 +1,116 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { UpdateUserDTO } from './dto/update.dto';
 import * as bcrypt from 'bcrypt';
-import { Role } from 'src/common/enums/role.enum';
 import { User, UserDocument } from './users.schema';
+import { Model } from 'mongoose';
+import { RegisterDTO } from './dto/register.dto';
+import { UserWithoutPassword } from './users.interface';
+import { isEmptyObject } from 'src/utils';
+import { CustomHttpException } from 'src/common/exceptions';
+import { SearchUserDTO, UpdateUserDTO } from './dto';
+import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>,
-  ) { }
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.find({ isDeleted: false }).exec();
   }
 
-  async findUsersByRole(role: Role): Promise<User[]> {
-    return this.userModel.find({ role, isDeleted: false }).exec();
+
+  async create(payload: RegisterDTO): Promise<UserWithoutPassword> {
+    if (isEmptyObject(payload)) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Model data is empty',);
+    }
+
+    const { fullName, email, password, phone, role } = payload;
+    console.log('Create - raw password:', password);
+
+
+    const existingUser = await this.userModel.findOne({ email });
+    if (existingUser) {
+      throw new CustomHttpException(HttpStatus.CONFLICT, 'Email already exists');
+    }
+    // Tạo user mới
+    const newUser = new this.userModel({
+      fullName,
+      email,
+      password,
+      phone,
+      role,
+    });
+
+    console.log(newUser);
+    try {
+      await newUser.save();
+    } catch (error) {
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern)[0];
+        throw new CustomHttpException(
+          HttpStatus.CONFLICT,
+          `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+        );
+      }
+      throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Something went wrong');
+    }
+
+
+    const { password: _password, ...userObj } = newUser.toObject();
+
+    return userObj as UserWithoutPassword;
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.userModel.findOne({ id }).exec();
-    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-    return user;
-  }
-
-  async update(id: string, updateUserDto: UpdateUserDTO): Promise<User> {
-    const user = await this.userModel.findOneAndUpdate({ id }, updateUserDto, {
-      new: true,
-    }).exec();
-
-    if (!user) throw new NotFoundException('User not found');
-    return user;
-  }
-
-  async validateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.userModel.findOne({ username, isDeleted: false }).lean().exec();
-    if (user && await bcrypt.compare(password, user.password)) {
-      return user;
+    if (!id) {
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'User ID is required');
     }
-    return null;
+
+    // Tìm user theo ID
+    const user = await this.userModel.findById(id).select('-password');
+
+    if (!user) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not exists');
+    }
+
+    return user;
   }
 
-  async findByUsername(username: string): Promise<User | null> {
-    return this.userModel.findOne({ username }).exec();
+  async updateUser(id: string, updateData: UpdateUserDTO): Promise<User> {
+    if (!id) {
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'User ID is required');
+    }
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true },
+    ).select('-password');
+
+    if (!updatedUser) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not exists');
+    }
+
+    return updatedUser;
   }
 
-  async createUser(payload: any): Promise<User> {
-    const newUser = new this.userModel({
-      ...payload,
-      role: payload.role || Role.Student,
-    });
-    return newUser.save();
+  async findByEmail(email: string) {
+    if (!email) {
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'User email is required');
+    }
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not exists');
+    }
+    return user;
   }
 
-  async searchUsers(pageNum: number, pageSize: number, query?: string, role?: Role) {
+
+  async searchUsers(params: SearchUserDTO) {
+    const { pageNum, pageSize, query, role } = params;
     const filters: any = { isDeleted: false };
 
     if (role) filters.role = role;
 
-    if (query && query.trim()) {
+    if (query?.trim()) {
       filters.$or = [
         { fullName: { $regex: query, $options: 'i' } },
         { email: { $regex: query, $options: 'i' } },
@@ -69,19 +118,21 @@ export class UsersService {
       ];
     }
 
-    const total = await this.userModel.countDocuments(filters);
+    const totalItems = await this.userModel.countDocuments(filters);
     const users = await this.userModel
       .find(filters)
       .skip((pageNum - 1) * pageSize)
       .limit(pageSize)
-      .exec();
+      .lean();
 
-    return {
-      users,
-      total,
+    const pageInfo = new PaginationResponseModel(
       pageNum,
       pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+      totalItems
+    );
+
+
+    return new SearchPaginationResponseModel(users, pageInfo);
   }
+
 }

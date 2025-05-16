@@ -4,10 +4,6 @@ import { IsString, IsEmail, IsEnum, IsPhoneNumber, IsNotEmpty, IsOptional } from
 import { Role } from 'src/common/enums/role.enum';
 
 export class RegisterDTO {
-  @ApiProperty({ description: 'Tên người dùng' })
-  @IsString()
-  @IsNotEmpty()
-  username: string;
 
   @ApiProperty({ description: 'Mật khẩu người dùng' })
   @IsString()
@@ -33,8 +29,12 @@ export class RegisterDTO {
   @IsNotEmpty()
   phone: string;
 
-  @ApiProperty({ enum: Role, description: 'Vai trò người dùng', example: 'user, admin, nurse, doctor' })
+  @ApiProperty({
+    enum: Role,
+    description: 'Vai trò người dùng',
+  })
   @IsEnum(Role)
+  @IsNotEmpty()
   role: Role;
 
   @ApiProperty({ default: false, description: 'Trạng thái xóa người dùng' })
