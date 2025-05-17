@@ -18,12 +18,12 @@ export class AuthService {
     // Kiểm tra user có tồn tại không
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new CustomHttpException(HttpStatus.UNAUTHORIZED, 'Invalid email or password');
+      throw new CustomHttpException(HttpStatus.UNAUTHORIZED, 'Email hoặc mật khẩu không hợp lệ');
     }
     // Kiểm tra mật khẩu
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      throw new CustomHttpException(HttpStatus.UNAUTHORIZED, 'Invalid email or password');
+      throw new CustomHttpException(HttpStatus.UNAUTHORIZED, 'Email hoặc mật khẩu không hợp lệ');
     }
 
     // Tạo token JWT

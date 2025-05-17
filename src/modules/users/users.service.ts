@@ -17,7 +17,7 @@ export class UsersService {
 
   async create(payload: RegisterDTO): Promise<UserWithoutPassword> {
     if (isEmptyObject(payload)) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Model data is empty',);
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Dữ liệu đang trống',);
     }
 
     const { fullName, email, password, phone, role } = payload;
@@ -26,7 +26,7 @@ export class UsersService {
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
-      throw new CustomHttpException(HttpStatus.CONFLICT, 'Email already exists');
+      throw new CustomHttpException(HttpStatus.CONFLICT, 'Email đã tồn tại');
     }
     // Tạo user mới
     const newUser = new this.userModel({
@@ -45,10 +45,10 @@ export class UsersService {
         const field = Object.keys(error.keyPattern)[0];
         throw new CustomHttpException(
           HttpStatus.CONFLICT,
-          `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+          `${field.charAt(0).toUpperCase() + field.slice(1)} đã tìm thầy`
         );
       }
-      throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Something went wrong');
+      throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Hệ thống lỗi');
     }
 
 
@@ -59,14 +59,14 @@ export class UsersService {
 
   async findOne(id: string): Promise<User> {
     if (!id) {
-      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'User ID is required');
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có userId');
     }
 
     // Tìm user theo ID
     const user = await this.userModel.findById(id).select('-password');
 
     if (!user) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not exists');
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     }
 
     return user;
@@ -74,7 +74,7 @@ export class UsersService {
 
   async updateUser(id: string, updateData: UpdateUserDTO): Promise<User> {
     if (!id) {
-      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'User ID is required');
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có userId');
     }
 
     const updatedUser = await this.userModel.findByIdAndUpdate(
@@ -84,7 +84,7 @@ export class UsersService {
     ).select('-password');
 
     if (!updatedUser) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not exists');
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     }
 
     return updatedUser;
@@ -92,11 +92,11 @@ export class UsersService {
 
   async findByEmail(email: string) {
     if (!email) {
-      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'User email is required');
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có email người dùng');
     }
     const user = await this.userModel.findOne({ email }).exec();
     if (!user) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not exists');
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     }
     return user;
   }
@@ -136,7 +136,7 @@ export class UsersService {
   async remove(id: string): Promise<boolean> {
     const user = await this.userModel.findById(id);
     if (!user) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not found');
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     }
 
     await this.userModel.findByIdAndUpdate(id, { isDeleted: true });

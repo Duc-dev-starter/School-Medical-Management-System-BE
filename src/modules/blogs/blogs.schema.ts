@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
 
-export type BlogDocument = Blog & Document;
+export type BlogDocument = HydratedDocument<Blog>;
 
 @Schema({ timestamps: true })
 export class Blog {
@@ -17,10 +18,10 @@ export class Blog {
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 
-    @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.CATEGORY, required: true })
     categoryId: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
     userId: Types.ObjectId;
 
     @Prop({ type: [{ type: Types.ObjectId, ref: 'Comment' }] })

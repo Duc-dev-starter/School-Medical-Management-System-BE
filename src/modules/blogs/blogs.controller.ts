@@ -3,9 +3,7 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -40,6 +38,7 @@ export class BlogsController {
   @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
   @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
   @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
+  @ApiQuery({ name: 'categoryId', required: false, description: 'ID của danh mục blog' })
   @ApiResponse({ status: 200 })
   @Public()
   async search(@Query() query: SearchBlogDTO) {
@@ -51,9 +50,6 @@ export class BlogsController {
   @Get(':id')
   async getBlog(@Param('id') id: string) {
     const blog = await this.blogService.findOne(id);
-    if (!blog) {
-      throw new NotFoundException('Blog not found');
-    }
     return formatResponse<Blog>(blog);
   }
 
@@ -75,11 +71,10 @@ export class BlogsController {
     return formatResponse<Blog>(blog);
   }
 
-  @Public()
   @ApiBearerAuth()
   @Delete(':id')
-  async deleteBlog(@Param('id') id: string) {
-    const result = await this.blogService.remove(id);
+  async deleteBlog(@Param('id') id: string, @Req() req,) {
+    const result = await this.blogService.remove(id, req.user);
     return formatResponse<boolean>(result);
   }
 }

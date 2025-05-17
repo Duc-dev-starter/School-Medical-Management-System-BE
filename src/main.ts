@@ -4,7 +4,7 @@ import { SwaggerConfig } from './config/swagger.config';
 import { initializeFirebaseAdmin } from './config/firebase.config';
 import { ConfigService } from '@nestjs/config';
 import { CustomExceptionFilter } from './common/exceptions';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+// import { BadRequestException, ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

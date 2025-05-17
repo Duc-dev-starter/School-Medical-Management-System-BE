@@ -5,7 +5,7 @@ import { Role } from 'src/common/enums';
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema({ timestamps: true }) // tạo createdAt, updatedAt tự động
+@Schema({ timestamps: true })
 export class User {
     @Prop({ required: true })
     password: string;

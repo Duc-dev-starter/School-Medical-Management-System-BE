@@ -8,7 +8,7 @@ export const UserRoles = [Role.Admin, Role.Student, Role.Manager, Role.Parent, R
 export interface UserWithoutPassword extends Omit<User, 'password'> { }
 
 export interface IUser {
-    _id?: string;
+    _id: string;
     name: string;
     email: string;
     password: string;

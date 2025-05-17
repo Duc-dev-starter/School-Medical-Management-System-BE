@@ -27,14 +27,14 @@ import { CreateCategoryDTO, SearchCategoryDTO, UpdateCategoryDTO } from './dto';
 @ApiTags('Categories')
 @Controller('api/categories')
 export class CategoriesController {
-    constructor(private readonly service: CategoriesService) { }
+    constructor(private readonly categoriesService: CategoriesService) { }
 
     @Post()
     @ApiOperation({ summary: 'Tạo danh mục mới' })
     @ApiBody({ type: CreateCategoryDTO })
     @ApiResponse({ status: 201, type: Category })
     async create(@Body() payload: CreateCategoryDTO) {
-        const category = await this.service.create(payload);
+        const category = await this.categoriesService.create(payload);
         return formatResponse(category);
     }
 
@@ -46,7 +46,7 @@ export class CategoriesController {
     @ApiResponse({ status: 200 })
     @Public()
     async search(@Query() query: SearchCategoryDTO) {
-        const result = await this.service.search(query);
+        const result = await this.categoriesService.search(query);
         return result;
     }
 
@@ -55,7 +55,7 @@ export class CategoriesController {
     @ApiParam({ name: 'id', description: 'ID danh mục' })
     @ApiResponse({ status: 200, type: Category })
     async findOne(@Param('id') id: string) {
-        const category = await this.service.findOne(id);
+        const category = await this.categoriesService.findOne(id);
         return formatResponse(category);
     }
 
@@ -65,7 +65,7 @@ export class CategoriesController {
     @ApiBody({ type: UpdateCategoryDTO })
     @ApiResponse({ status: 200, type: Category })
     async update(@Param('id') id: string, @Body() payload: UpdateCategoryDTO) {
-        const updated = await this.service.update(id, payload);
+        const updated = await this.categoriesService.update(id, payload);
         return formatResponse(updated);
     }
 
@@ -74,7 +74,7 @@ export class CategoriesController {
     @ApiParam({ name: 'id', description: 'ID của danh mục cần xóa' })
     @ApiResponse({ status: 200, description: 'Trả về true nếu xóa thành công', type: Boolean })
     async remove(@Param('id') id: string): Promise<boolean> {
-        return await this.service.remove(id);
+        return await this.categoriesService.remove(id);
     }
 
 }

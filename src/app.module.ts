@@ -11,6 +11,8 @@ import { RolesGuard } from './common/guard/roles.guard';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { BlogsModule } from './modules/blogs/blogs.module';
+import { CommentsModule } from './modules/comments/comments.module';
+import { MedicinesModule } from './modules/medicines/medicines.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { BlogsModule } from './modules/blogs/blogs.module';
     UsersModule,
     CategoriesModule,
     BlogsModule,
+    CommentsModule,
+    MedicinesModule,
 
     ConfigModule.forRoot({
       isGlobal: true,
