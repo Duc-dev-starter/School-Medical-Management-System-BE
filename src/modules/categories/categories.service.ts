@@ -11,7 +11,7 @@ export class CategoriesService {
     constructor(@InjectModel(Category.name) private categoryModel: Model<CategoryDocument>) { }
 
     async create(payload: CreateCategoryDTO): Promise<Category> {
-        const existing = await this.categoryModel.findOne({ name: payload.name });
+        const existing = await this.categoryModel.findOne({ name: payload.name, isDeleted: false });
         if (existing) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Category đã tồn tại');
         }
@@ -21,7 +21,7 @@ export class CategoriesService {
     }
 
     async findOne(id: string): Promise<Category> {
-        const category = await this.categoryModel.findById(id);
+        const category = await this.categoryModel.findOne({ _id: id, isDeleted: false });
         if (!category) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy category');
         }
@@ -55,10 +55,11 @@ export class CategoriesService {
     }
 
     async remove(id: string): Promise<boolean> {
-        const category = await this.categoryModel.findById(id);
+        const category = await this.categoryModel.findOne({ _id: id, isDeleted: false });
         if (!category) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy category');
         }
+        await this.categoryModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
     }
 }

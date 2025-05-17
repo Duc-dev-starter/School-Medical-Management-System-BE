@@ -71,10 +71,10 @@ export class BlogsService {
 
   async update(id: string, updateData: UpdateBlogDTO, user): Promise<Blog> {
     if (!id) {
-      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy category');
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy blog');
     }
 
-    const blog = await this.blogModel.findById(id);
+    const blog = await this.blogModel.findOne({ _id: id, isDeleted: false });
 
     if (!blog) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy blog');

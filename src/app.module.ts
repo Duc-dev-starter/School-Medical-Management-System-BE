@@ -13,6 +13,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { BlogsModule } from './modules/blogs/blogs.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { MedicinesModule } from './modules/medicines/medicines.module';
+import { HealthRecordsModule } from './modules/health-records/health-records.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MedicinesModule } from './modules/medicines/medicines.module';
     BlogsModule,
     CommentsModule,
     MedicinesModule,
+    HealthRecordsModule,
 
     ConfigModule.forRoot({
       isGlobal: true,

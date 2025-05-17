@@ -16,6 +16,9 @@ export class Medicine {
 
     @Prop()
     sideEffects: string;
+
+    @Prop({ type: Boolean, default: false })
+    isDeleted: boolean;
 }
 
 export const MedicineSchema = SchemaFactory.createForClass(Medicine);
