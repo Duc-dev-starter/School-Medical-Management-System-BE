@@ -135,4 +135,14 @@ export class UsersService {
     return new SearchPaginationResponseModel(users, pageInfo);
   }
 
+  async remove(id: string): Promise<boolean> {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'User not found');
+    }
+
+    await this.userModel.findByIdAndUpdate(id, { isDeleted: true });
+    return true;
+  }
+
 }

@@ -9,11 +9,13 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './common/guard/auth.guard';
 import { RolesGuard } from './common/guard/roles.guard';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
     AuthModule,
     UsersModule,
+    CategoriesModule,
 
     ConfigModule.forRoot({
       isGlobal: true,

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -114,4 +115,13 @@ export class UsersController {
     const item = await this.usersService.findOne(id);
     return formatResponse<User>(item);
   }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Xóa người dùng (gán isDeleted = true)' })
+  @ApiParam({ name: 'id', description: 'ID của người dùng cần xóa' })
+  @ApiResponse({ status: 200, description: 'Trả về true nếu xóa mềm thành công', type: Boolean })
+  async remove(@Param('id') id: string): Promise<boolean> {
+    return await this.usersService.remove(id);
+  }
+
 }
