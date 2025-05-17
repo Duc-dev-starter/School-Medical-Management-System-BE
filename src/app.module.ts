@@ -10,12 +10,14 @@ import { AuthGuard } from './common/guard/auth.guard';
 import { RolesGuard } from './common/guard/roles.guard';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { BlogsModule } from './modules/blogs/blogs.module';
 
 @Module({
   imports: [
     AuthModule,
     UsersModule,
     CategoriesModule,
+    BlogsModule,
 
     ConfigModule.forRoot({
       isGlobal: true,

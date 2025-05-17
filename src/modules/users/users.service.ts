@@ -1,6 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './users.schema';
 import { Model } from 'mongoose';
 import { RegisterDTO } from './dto/register.dto';
@@ -15,7 +14,6 @@ export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {
 
   }
-
 
   async create(payload: RegisterDTO): Promise<UserWithoutPassword> {
     if (isEmptyObject(payload)) {
