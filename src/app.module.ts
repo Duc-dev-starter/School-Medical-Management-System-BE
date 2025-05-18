@@ -14,6 +14,7 @@ import { BlogsModule } from './modules/blogs/blogs.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { MedicinesModule } from './modules/medicines/medicines.module';
 import { HealthRecordsModule } from './modules/health-records/health-records.module';
+import { MedicineSubmissionsModule } from './modules/medicine-submissions/medicine-submissions.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { HealthRecordsModule } from './modules/health-records/health-records.mod
     CommentsModule,
     MedicinesModule,
     HealthRecordsModule,
+    MedicineSubmissionsModule,
 
     ConfigModule.forRoot({
       isGlobal: true,
