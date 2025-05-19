@@ -124,7 +124,7 @@ export class CommentsService {
       throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Bạn không có quyền xóa comment này');
     }
 
-    await this.commentModel.findByIdAndDelete(id);
+    await this.commentModel.findByIdAndUpdate(id, { isDeleted: true });
     return true;
   }
 }

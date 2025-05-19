@@ -15,6 +15,8 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { MedicinesModule } from './modules/medicines/medicines.module';
 import { HealthRecordsModule } from './modules/health-records/health-records.module';
 import { MedicineSubmissionsModule } from './modules/medicine-submissions/medicine-submissions.module';
+import { MedicalSuppliesModule } from './modules/medical-supplies/medical-supplies.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -26,9 +28,19 @@ import { MedicineSubmissionsModule } from './modules/medicine-submissions/medici
     MedicinesModule,
     HealthRecordsModule,
     MedicineSubmissionsModule,
+    MedicalSuppliesModule,
 
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 10,
+        },
+      ],
     }),
 
     // MongooseModule để kết nối MongoDB
@@ -47,12 +59,12 @@ import { MedicineSubmissionsModule } from './modules/medicine-submissions/medici
         port: 587,
         secure: false,
         auth: {
-          user: 'leminhduck@gmail.com',
+          user: 'admin@gmail.com',
           pass: 'nusfpougsykpemtb',
         },
       },
       defaults: {
-        from: 'leminhduck@gmail.com',
+        from: 'admin@gmail.com',
       },
     }),
   ],

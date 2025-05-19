@@ -101,7 +101,7 @@ export class HealthRecordsService {
             throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không có quyền xoá hồ sơ này');
         }
 
-        await this.healthRecordModel.findByIdAndDelete(id);
+        await this.healthRecordModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
     }
 }
