@@ -10,6 +10,7 @@ import {
   Query,
   Req,
   Request,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
@@ -18,6 +19,7 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { Blog } from './blogs.schema';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateBlogDTO, SearchBlogDTO, UpdateBlogDTO } from './dto';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @ApiTags('Blogs')
 @Controller('api/blogs')
@@ -33,19 +35,21 @@ export class BlogsController {
     return formatResponse<Blog>(blog);
   }
 
-  @Get('search/:pageNum/:pageSize')
   @ApiOperation({ summary: 'Tìm kiếm danh mục có phân trang' })
-  @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
-  @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
-  @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
-  @ApiQuery({ name: 'categoryId', required: false, description: 'ID của danh mục blog' })
-  @ApiResponse({ status: 200 })
+  @Get('search')
+  @ApiOperation({ summary: 'Tìm kiếm blog có phân trang' })
+  @ApiQuery({ name: 'pageNum', required: false, example: 1, description: 'Trang hiện tại' })
+  @ApiQuery({ name: 'pageSize', required: false, example: 10, description: 'Số lượng bản ghi mỗi trang' })
+  @ApiQuery({ name: 'query', required: false })
+  @ApiQuery({ name: 'categoryId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
   @Public()
   async search(@Query() query: SearchBlogDTO) {
-    const result = await this.blogService.search(query);
-    return result;
+    return this.blogService.search(query);
   }
 
+
+  @CacheTTL(60 * 1000)
   @Public()
   @Get(':id')
   async getBlog(@Param('id') id: string) {

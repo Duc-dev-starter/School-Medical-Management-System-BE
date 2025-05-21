@@ -17,6 +17,11 @@ import { HealthRecordsModule } from './modules/health-records/health-records.mod
 import { MedicineSubmissionsModule } from './modules/medicine-submissions/medicine-submissions.module';
 import { MedicalSuppliesModule } from './modules/medical-supplies/medical-supplies.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisCacheConfig } from './config/redis.config';
+import { MedicalEventsModule } from './modules/medical-events/medical-events.module';
+
+
 
 @Module({
   imports: [
@@ -29,10 +34,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
     HealthRecordsModule,
     MedicineSubmissionsModule,
     MedicalSuppliesModule,
+    MedicalEventsModule,
+    CacheModule.registerAsync(redisCacheConfig()),
 
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
 
     ThrottlerModule.forRoot({
       throttlers: [
@@ -42,6 +50,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
         },
       ],
     }),
+
+
 
     // MongooseModule để kết nối MongoDB
     MongooseModule.forRootAsync({

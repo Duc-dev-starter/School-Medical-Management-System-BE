@@ -4,6 +4,7 @@ import {
   PaginationResponseModel,
   SearchPaginationResponseModel,
 } from 'src/common/models';
+import * as crypto from 'crypto';
 
 export const formatResponse = <T>(data: T, success: boolean = true) => {
   return {
@@ -46,3 +47,8 @@ export const validatePaginationInput = (model: any) => {
     );
   }
 };
+
+export const generateCacheKey = (prefix: string, obj: any) => {
+  const hash = crypto.createHash('md5').update(JSON.stringify(obj)).digest('hex');
+  return `${prefix}:${hash}`;
+}
