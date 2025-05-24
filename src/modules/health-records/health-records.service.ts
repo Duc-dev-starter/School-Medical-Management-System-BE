@@ -51,9 +51,9 @@ export class HealthRecordsService {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
         }
 
-        if (record.userId.toString() !== user._id.toString()) {
-            throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không có quyền cập nhật hồ sơ này');
-        }
+        // if (record.userId.toString() !== user._id.toString()) {
+        //     throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không có quyền cập nhật hồ sơ này');
+        // }
 
         const updated = await this.healthRecordModel.findByIdAndUpdate(
             id,
@@ -97,9 +97,9 @@ export class HealthRecordsService {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
         }
 
-        if (record.userId.toString() !== user._id.toString() && user.role !== 'admin') {
-            throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không có quyền xoá hồ sơ này');
-        }
+        // if (record.userId.toString() !== user._id.toString() && user.role !== 'admin') {
+        //     throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không có quyền xoá hồ sơ này');
+        // }
 
         await this.healthRecordModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;

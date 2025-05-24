@@ -4,5 +4,8 @@ export const COLLECTION_NAME = {
     BLOG: 'Blog',
     COMMENT: 'Comment',
     MEDICINE: 'Medicine',
-    HEALTH_RECORD: 'Health-Record'
+    HEALTH_RECORD: 'Health-Record',
+    CLASS: 'Class',
+    GRADE: 'Grade',
+    STUDENT: 'Student'
 };

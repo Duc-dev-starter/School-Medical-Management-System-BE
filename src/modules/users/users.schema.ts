@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument } from 'mongoose';
+import { Document, HydratedDocument, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/common/enums';
+import { Student } from '../students/students.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -24,6 +25,9 @@ export class User {
 
     @Prop({ enum: Role, default: Role.Student })
     role: Role;
+
+    @Prop({ type: Types.ObjectId, ref: Student.name, required: true })
+    studentIds: Student[];
 
     @Prop({ default: false })
     isDeleted: boolean;

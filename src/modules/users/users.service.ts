@@ -24,7 +24,7 @@ export class UsersService {
     console.log('Create - raw password:', password);
 
 
-    const existingUser = await this.userModel.findOne({ email });
+    const existingUser = await this.userModel.findOne({ email, isDeleted: false });
     if (existingUser) {
       throw new CustomHttpException(HttpStatus.CONFLICT, 'Email đã tồn tại');
     }
@@ -63,7 +63,7 @@ export class UsersService {
     }
 
     // Tìm user theo ID
-    const user = await this.userModel.findById(id).select('-password');
+    const user = await this.userModel.findOne({ _id: id, isDeleted: false }).select('-password');
 
     if (!user) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
@@ -77,11 +77,7 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có userId');
     }
 
-    const updatedUser = await this.userModel.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true },
-    ).select('-password');
+    const updatedUser = await this.userModel.findOne({ _id: id, isDeleted: false })
 
     if (!updatedUser) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
@@ -94,7 +90,7 @@ export class UsersService {
     if (!email) {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có email người dùng');
     }
-    const user = await this.userModel.findOne({ email }).exec();
+    const user = await this.userModel.findOne({ email, isDeleted: false }).exec();
     if (!user) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     }
@@ -134,7 +130,7 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<boolean> {
-    const user = await this.userModel.findById(id);
+    const user = await this.userModel.findOne({ _id: id, isDeleted: false });
     if (!user) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     }

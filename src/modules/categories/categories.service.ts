@@ -29,7 +29,7 @@ export class CategoriesService {
     }
 
     async update(id: string, data: UpdateCategoryDTO): Promise<Category> {
-        const updated = await this.categoryModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+        const updated = await this.categoryModel.findOne({ id, isDeleted: false }, { $set: data }, { new: true });
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy category');
         }

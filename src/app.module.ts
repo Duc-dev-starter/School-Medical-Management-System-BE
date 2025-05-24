@@ -20,6 +20,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisCacheConfig } from './config/redis.config';
 import { MedicalEventsModule } from './modules/medical-events/medical-events.module';
+import { GradesModule } from './modules/grades/grades.module';
+import { ClassesModule } from './modules/classes/classes.module';
+import { StudentsModule } from './modules/students/students.module';
 
 
 
@@ -35,6 +38,9 @@ import { MedicalEventsModule } from './modules/medical-events/medical-events.mod
     MedicineSubmissionsModule,
     MedicalSuppliesModule,
     MedicalEventsModule,
+    GradesModule,
+    ClassesModule,
+    StudentsModule,
     CacheModule.registerAsync(redisCacheConfig()),
 
     ConfigModule.forRoot({
