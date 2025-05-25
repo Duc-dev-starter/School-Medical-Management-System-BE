@@ -37,13 +37,13 @@ export class StudentsService {
     }
 
     async search(params: SearchStudentDTO) {
-        const { pageNum, pageSize, query, classsId, parentId } = params;
+        const { pageNum, pageSize, query, classId, parentId } = params;
         const filters: any = {};
         if (query?.trim()) {
             filters.fullName = { $regex: query, $options: 'i' };
         }
 
-        if (classsId?.trim()) filters.classsId = classsId;
+        if (classId?.trim()) filters.classsId = classId;
         if (parentId?.trim()) filters.parentId = parentId;
 
         const totalItems = await this.studentModel.countDocuments(filters);

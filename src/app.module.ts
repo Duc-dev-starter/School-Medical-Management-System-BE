@@ -23,6 +23,10 @@ import { MedicalEventsModule } from './modules/medical-events/medical-events.mod
 import { GradesModule } from './modules/grades/grades.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { StudentsModule } from './modules/students/students.module';
+import { VaccineEventsModule } from './modules/vaccine-events/vaccine-events.module';
+import { VaccineRegistrationsModule } from './modules/vaccine-registrations/vaccine-registrations.module';
+import { VaccineAppointment } from './modules/vaccine-appoinments/vaccine-appoinments.schema';
+import { VaccineAppoimentsModule } from './modules/vaccine-appoinments/vaccine-appoinments.module';
 
 
 
@@ -41,6 +45,9 @@ import { StudentsModule } from './modules/students/students.module';
     GradesModule,
     ClassesModule,
     StudentsModule,
+    VaccineEventsModule,
+    VaccineRegistrationsModule,
+    VaccineAppoimentsModule,
     CacheModule.registerAsync(redisCacheConfig()),
 
     ConfigModule.forRoot({

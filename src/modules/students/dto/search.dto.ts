@@ -17,7 +17,7 @@ export class SearchStudentDTO extends PaginationRequestModel {
         description: 'Lọc theo classId',
         required: false,
     })
-    classsId?: string;
+    classId?: string;
 
 
     @IsOptional()

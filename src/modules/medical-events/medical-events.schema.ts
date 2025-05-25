@@ -3,6 +3,7 @@ import { Document, Types } from 'mongoose';
 import { HealthRecord } from '../health-records/health-records.schema';
 import { Medicine } from '../medicines/medicines.schema';
 import { MedicalSupply } from '../medical-supplies/medical-supplies.schema';
+import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
 
 export type MedicalEventDocument = MedicalEvent & Document;
 
@@ -10,6 +11,10 @@ export type MedicalEventDocument = MedicalEvent & Document;
 export class MedicalEvent {
     @Prop({ type: Types.ObjectId, ref: HealthRecord.name, required: true })
     studentId: Types.ObjectId;
+
+
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
+    schoolNurseId: Types.ObjectId;
 
     @Prop({ required: true })
     eventName: string;
