@@ -25,8 +25,10 @@ import { ClassesModule } from './modules/classes/classes.module';
 import { StudentsModule } from './modules/students/students.module';
 import { VaccineEventsModule } from './modules/vaccine-events/vaccine-events.module';
 import { VaccineRegistrationsModule } from './modules/vaccine-registrations/vaccine-registrations.module';
-import { VaccineAppointment } from './modules/vaccine-appoinments/vaccine-appoinments.schema';
 import { VaccineAppoimentsModule } from './modules/vaccine-appoinments/vaccine-appoinments.module';
+import { MedicalCheckEventsModule } from './modules/medical-check-events/medical-check-events.module';
+import { MedicalCheckRegistrationsModule } from './modules/medical-check-registrations/medical-check-registrations.module';
+import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointments/medical-check-appointments.module';
 
 
 
@@ -48,6 +50,9 @@ import { VaccineAppoimentsModule } from './modules/vaccine-appoinments/vaccine-a
     VaccineEventsModule,
     VaccineRegistrationsModule,
     VaccineAppoimentsModule,
+    MedicalCheckEventsModule,
+    MedicalCheckRegistrationsModule,
+    MedicalCheckAppointmentsModule,
     CacheModule.registerAsync(redisCacheConfig()),
 
     ConfigModule.forRoot({
@@ -82,12 +87,12 @@ import { VaccineAppoimentsModule } from './modules/vaccine-appoinments/vaccine-a
         port: 587,
         secure: false,
         auth: {
-          user: 'admin@gmail.com',
-          pass: 'nusfpougsykpemtb',
+          user: 'leminhduc140503@gmail.com',
+          pass: 'cvbcbmerxktxjymw',
         },
       },
       defaults: {
-        from: 'admin@gmail.com',
+        from: 'leminhduc140503@gmail.com',
       },
     }),
   ],

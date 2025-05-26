@@ -20,14 +20,14 @@ export class HealthRecordsService {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Dữ liệu không được để trống');
         }
 
-        const { studentName, userId } = payload;
+        const { studentId } = payload;
 
-        const existingRecord = await this.healthRecordModel.findOne({ studentName, userId });
+        const existingRecord = await this.healthRecordModel.findOne({ studentId });
         if (existingRecord) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Hồ sơ sức khỏe đã tồn tại');
         }
 
-        const newRecord = new this.healthRecordModel({ ...payload, userId: user._id });
+        const newRecord = new this.healthRecordModel({ ...payload });
 
         try {
             await newRecord.save();
