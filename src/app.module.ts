@@ -81,19 +81,23 @@ import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointm
     }),
 
     // Cấu hình gửi mail
-    MailerModule.forRoot({
-      transport: {
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: 'leminhduc140503@gmail.com',
-          pass: 'cvbcbmerxktxjymw',
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('MAIL_PASS'),
+          },
         },
-      },
-      defaults: {
-        from: 'leminhduc140503@gmail.com',
-      },
+        defaults: {
+          from: configService.get<string>('MAIL_USER'),
+        },
+      }),
     }),
   ],
   controllers: [AppController],
