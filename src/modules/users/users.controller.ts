@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,11 +21,12 @@ import {
 import { Role } from 'src/common/enums/role.enum';
 import { UsersService } from './users.service';
 import { User } from './users.schema';
-import { SearchUserDTO, UpdateUserDTO } from './dto';
+import { LinkStudentsDTO, SearchUserDTO, UpdateUserDTO } from './dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { RegisterDTO } from './dto/register.dto';
 import { formatResponse } from 'src/utils';
 import { UserWithoutPassword } from './users.interface';
+import { Student } from '../students/students.schema';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -122,6 +124,17 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Trả về true nếu xóa mềm thành công', type: Boolean })
   async remove(@Param('id') id: string): Promise<boolean> {
     return await this.usersService.remove(id);
+  }
+
+
+  @Post('link-students')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Liên kết học sinh với phụ huynh' })
+  @ApiBody({ type: LinkStudentsDTO })
+  @ApiResponse({ status: 200, description: 'Liên kết thành công', type: [Student] })
+  async linkStudents(@Req() req, @Body() body: LinkStudentsDTO) {
+    const result = await this.usersService.linkStudents(req.user, body.studentCodes);
+    return formatResponse(result);
   }
 
 }

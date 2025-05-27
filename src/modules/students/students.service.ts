@@ -13,24 +13,38 @@ export class StudentsService {
         @InjectModel(Class.name) private classModel: Model<ClassDocument>,) { }
 
     async create(payload: CreateStudentDTO): Promise<Student> {
-        const existing = await this.studentModel.findOne({ fullName: payload.fullName, isDeleted: false });
+        const { fullName, classId } = payload;
+
+        const existing = await this.studentModel.findOne({ fullName, isDeleted: false });
         if (existing) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh đã tồn tại');
         }
 
-        const existingClass = await this.classModel.findOne({ _id: payload.classId, isDeleted: false });
+        const existingClass = await this.classModel.findOne({ _id: classId, isDeleted: false });
         if (!existingClass) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
         }
 
-        const item = new this.studentModel(payload);
+        const countInClass = await this.studentModel.countDocuments({ classId, isDeleted: false });
+        const position = countInClass + 1;
+
+        const studentCode = `HS-${Date.now().toString().slice(-8)}`;
+
+        const item = new this.studentModel({
+            ...payload,
+            position,
+            studentCode,
+        });
+
         const savedStudent = await item.save();
 
-        await this.classModel.findByIdAndUpdate(payload.classId, {
-            $addToSet: { studentIds: savedStudent._id }
+        await this.classModel.findByIdAndUpdate(classId, {
+            $addToSet: { studentIds: savedStudent._id },
         });
+
         return savedStudent;
     }
+
 
     async findOne(id: string): Promise<Student> {
         const item = await this.studentModel

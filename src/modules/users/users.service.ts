@@ -3,32 +3,32 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './users.schema';
 import { Model } from 'mongoose';
 import { RegisterDTO } from './dto/register.dto';
-import { UserWithoutPassword } from './users.interface';
+import { IUser, UserWithoutPassword } from './users.interface';
 import { isEmptyObject } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { SearchUserDTO, UpdateUserDTO } from './dto';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
+import { Student, StudentDocument } from '../students/students.schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Student.name) private studentModel: Model<StudentDocument>) {
 
   }
 
   async create(payload: RegisterDTO): Promise<UserWithoutPassword> {
     if (isEmptyObject(payload)) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Dữ liệu đang trống',);
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Dữ liệu đang trống');
     }
 
-    const { fullName, email, password, phone, role } = payload;
-    console.log('Create - raw password:', password);
-
+    const { fullName, email, password, phone, role, studentCodes = [] } = payload;
 
     const existingUser = await this.userModel.findOne({ email, isDeleted: false });
     if (existingUser) {
       throw new CustomHttpException(HttpStatus.CONFLICT, 'Email đã tồn tại');
     }
-    // Tạo user mới
+
     const newUser = new this.userModel({
       fullName,
       email,
@@ -37,7 +37,6 @@ export class UsersService {
       role,
     });
 
-    console.log(newUser);
     try {
       await newUser.save();
     } catch (error) {
@@ -45,17 +44,46 @@ export class UsersService {
         const field = Object.keys(error.keyPattern)[0];
         throw new CustomHttpException(
           HttpStatus.CONFLICT,
-          `${field.charAt(0).toUpperCase() + field.slice(1)} đã tìm thầy`
+          `${field.charAt(0).toUpperCase() + field.slice(1)} đã tồn tại`
         );
       }
-      throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Hệ thống lỗi');
+      throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, error.message);
     }
 
+    if (role === 'parent' && studentCodes.length > 0) {
+      const students = await this.studentModel.find({
+        studentCode: { $in: studentCodes },
+        isDeleted: false,
+      });
+
+      if (students.length !== studentCodes.length) {
+        throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Một số mã học sinh không hợp lệ');
+      }
+
+      const alreadyLinked = students.filter((s) => s.parentId);
+      if (alreadyLinked.length > 0) {
+        throw new CustomHttpException(
+          HttpStatus.CONFLICT,
+          `Học sinh ${alreadyLinked.map((s) => s.fullName).join(', ')} đã có phụ huynh liên kết`
+        );
+      }
+
+      const studentIds = students.map((s) => s._id);
+
+      await this.studentModel.updateMany(
+        { _id: { $in: studentIds } },
+        { parentId: newUser._id }
+      );
+
+      await this.userModel.findByIdAndUpdate(newUser._id, {
+        $addToSet: { studentIds: { $each: studentIds } }
+      });
+    }
 
     const { password: _password, ...userObj } = newUser.toObject();
-
     return userObj as UserWithoutPassword;
   }
+
 
   async findOne(id: string): Promise<User> {
     if (!id) {
@@ -137,6 +165,45 @@ export class UsersService {
 
     await this.userModel.findByIdAndUpdate(id, { isDeleted: true });
     return true;
+  }
+
+  async linkStudents(user: IUser, studentCodes: string[]) {
+    if (user.role !== 'parent') {
+      throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Chỉ phụ huynh mới có thể liên kết học sinh');
+    }
+
+    const students = await this.studentModel.find({
+      studentCode: { $in: studentCodes },
+      isDeleted: false,
+    });
+
+    if (students.length !== studentCodes.length) {
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Một số mã học sinh không hợp lệ');
+    }
+
+    const alreadyLinked = students.filter((s) => s.parentId);
+    if (alreadyLinked.length > 0) {
+      throw new CustomHttpException(
+        HttpStatus.CONFLICT,
+        `Học sinh ${alreadyLinked.map((s) => s.fullName).join(', ')} đã được liên kết`
+      );
+    }
+
+    const studentIds = students.map((s) => s._id);
+
+    await this.studentModel.updateMany(
+      { _id: { $in: studentIds } },
+      { parentId: user._id }
+    );
+
+    await this.userModel.findByIdAndUpdate(user._id, {
+      $addToSet: { studentIds: { $each: studentIds } }
+    });
+
+    return students.map(s => ({
+      fullName: s.fullName,
+      studentCode: s.studentCode,
+    }));
   }
 
 }

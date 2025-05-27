@@ -26,8 +26,9 @@ export class User {
     @Prop({ enum: Role, default: Role.Student })
     role: Role;
 
-    @Prop({ type: Types.ObjectId, ref: Student.name, required: true })
-    studentIds: Student[];
+    @Prop({ type: [Types.ObjectId], ref: Student.name, default: [] })
+    studentIds: Types.ObjectId[];
+
 
     @Prop({ default: false })
     isDeleted: boolean;

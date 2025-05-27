@@ -28,6 +28,11 @@ export class Student {
     @Prop()
     avatar?: string;
 
+    @Prop({ required: true, unique: true })
+    studentCode: string;
+
+    @Prop()
+    position: number;
 
 }
 

@@ -1,6 +1,6 @@
 
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, IsEnum, IsPhoneNumber, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsPhoneNumber, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
 import { Role } from 'src/common/enums/role.enum';
 
 export class RegisterDTO {
@@ -36,6 +36,12 @@ export class RegisterDTO {
   @IsEnum(Role)
   @IsNotEmpty()
   role: Role;
+
+
+  @ApiProperty({ description: 'Mã học sinh' })
+  @IsOptional()
+  @IsArray()
+  studentCodes?: string[];
 
   @ApiProperty({ default: false, description: 'Trạng thái xóa người dùng' })
   @IsOptional()
