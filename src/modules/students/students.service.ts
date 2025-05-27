@@ -5,10 +5,12 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { Student, StudentDocument } from './students.schema';
 import { CreateStudentDTO, SearchStudentDTO, UpdateStudentDTO } from './dto';
+import { Class, ClassDocument } from '../classes/classes.schema';
 
 @Injectable()
 export class StudentsService {
-    constructor(@InjectModel(Student.name) private studentModel: Model<StudentDocument>) { }
+    constructor(@InjectModel(Student.name) private studentModel: Model<StudentDocument>,
+        @InjectModel(Class.name) private classModel: Model<ClassDocument>,) { }
 
     async create(payload: CreateStudentDTO): Promise<Student> {
         const existing = await this.studentModel.findOne({ fullName: payload.fullName, isDeleted: false });
@@ -16,25 +18,50 @@ export class StudentsService {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh đã tồn tại');
         }
 
+        const existingClass = await this.classModel.findOne({ _id: payload.classId, isDeleted: false });
+        if (!existingClass) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
+        }
+
         const item = new this.studentModel(payload);
-        return await item.save();
+        const savedStudent = await item.save();
+
+        await this.classModel.findByIdAndUpdate(payload.classId, {
+            $addToSet: { studentIds: savedStudent._id }
+        });
+        return savedStudent;
     }
 
     async findOne(id: string): Promise<Student> {
-        const item = await this.studentModel.findOne({ _id: id, isDeleted: false });
+        const item = await this.studentModel
+            .findOne({ _id: id, isDeleted: false })
+            .populate('classId')
+            .populate('parentId')
+            .exec();
+
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
+
         return item;
     }
 
+
     async update(id: string, data: UpdateStudentDTO): Promise<Student> {
-        const updated = await this.studentModel.findOne({ id, isDeleted: false }, { $set: data }, { new: true });
+        const updated = await this.studentModel
+            .findOneAndUpdate(
+                { _id: id, isDeleted: false },
+                { $set: data },
+                { new: true }
+            )
+            .exec();
+
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
         return updated;
     }
+
 
     async search(params: SearchStudentDTO) {
         const { pageNum, pageSize, query, classId, parentId } = params;
@@ -51,6 +78,8 @@ export class StudentsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .populate('parentId')
+            .populate('classId')
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);

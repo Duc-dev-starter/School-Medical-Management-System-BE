@@ -10,9 +10,6 @@ export class Student {
     @Prop({ required: true, unique: true })
     fullName: string;
 
-    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.GRADE, required: true })
-    gradeId: string;
-
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 
@@ -20,9 +17,9 @@ export class Student {
     gender: 'male' | 'female';
 
     @Prop({ required: true })
-    dateOfBirth: Date;
+    dob: Date;
 
-    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER })
     parentId: string;
 
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.CLASS, required: true })
@@ -31,9 +28,6 @@ export class Student {
     @Prop()
     avatar?: string;
 
-
-    @Prop({ type: [Types.ObjectId], ref: 'Student', default: [] })
-    studentIds: Types.ObjectId[];
 
 }
 

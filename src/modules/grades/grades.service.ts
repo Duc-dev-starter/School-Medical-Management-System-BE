@@ -21,7 +21,11 @@ export class GradesService {
     }
 
     async findOne(id: string): Promise<Grade> {
-        const grade = await this.gradeModel.findOne({ _id: id, isDeleted: false });
+        const grade = await this.gradeModel
+            .findOne({ _id: id, isDeleted: false })
+            .populate('classIds')
+            .exec();
+
         if (!grade) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy khối');
         }
@@ -29,12 +33,20 @@ export class GradesService {
     }
 
     async update(id: string, data: UpdateGradeDTO): Promise<Grade> {
-        const updated = await this.gradeModel.findOne({ id, isDeleted: false }, { $set: data }, { new: true });
+        const updated = await this.gradeModel
+            .findOneAndUpdate(
+                { _id: id, isDeleted: false },
+                { $set: data },
+                { new: true }
+            )
+
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy khối');
         }
+
         return updated;
     }
+
 
     async search(params: SearchGradeDTO) {
         const { pageNum, pageSize, query } = params;
@@ -48,6 +60,7 @@ export class GradesService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .populate('classIds')
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);

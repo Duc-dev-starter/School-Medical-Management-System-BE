@@ -17,20 +17,15 @@ export class CreateStudentDTO {
     @IsDateString()
     dob: Date;
 
-    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b3', description: 'ID của phụ huynh' })
-    @IsNotEmpty()
+    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b3', description: 'ID của phụ huynh', required: false })
+    @IsOptional()
     @IsString()
-    parentId: string;
+    parentId?: string;
 
     @ApiProperty({ example: '64faeaaeb44c9e2f12c157b2', description: 'ID của lớp học' })
     @IsNotEmpty()
     @IsString()
     classId: string;
-
-    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b1', description: 'ID của khối' })
-    @IsNotEmpty()
-    @IsString()
-    gradeId: string;
 
     @ApiProperty({ example: 'https://example.com/avatar.jpg', description: 'Link ảnh đại diện học sinh', required: false })
     @IsOptional()
