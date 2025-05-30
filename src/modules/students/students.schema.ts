@@ -7,7 +7,7 @@ export type StudentDocument = HydratedDocument<Student>;
 
 @Schema({ timestamps: true })
 export class Student {
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true, })
     fullName: string;
 
     @Prop({ type: Boolean, default: false })
@@ -28,7 +28,7 @@ export class Student {
     @Prop()
     avatar?: string;
 
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true, })
     studentCode: string;
 
     @Prop()

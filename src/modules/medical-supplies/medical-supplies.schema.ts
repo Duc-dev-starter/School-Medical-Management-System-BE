@@ -5,7 +5,7 @@ export type MedicalSupplyDocument = MedicalSupply & Document;
 
 @Schema({ timestamps: true })
 export class MedicalSupply {
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true, })
     name: string;
 
     @Prop()

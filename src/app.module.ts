@@ -29,6 +29,7 @@ import { VaccineAppoimentsModule } from './modules/vaccine-appoinments/vaccine-a
 import { MedicalCheckEventsModule } from './modules/medical-check-events/medical-check-events.module';
 import { MedicalCheckRegistrationsModule } from './modules/medical-check-registrations/medical-check-registrations.module';
 import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointments/medical-check-appointments.module';
+import { BullModule } from '@nestjs/bull';
 
 
 
@@ -67,6 +68,16 @@ import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointm
           limit: 10,
         },
       ],
+    }),
+
+    BullModule.forRoot({
+      redis: {
+        host: 'localhost',
+        port: 6379,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'mailQueue',
     }),
 
 

@@ -8,7 +8,7 @@ export type VaccineEventDocument = HydratedDocument<VaccineEvent>;
 
 @Schema({ timestamps: true })
 export class VaccineEvent {
-    @Prop({ required: true, unique: true })
+    @Prop({ required: true })
     title: string;
 
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.GRADE, required: true })

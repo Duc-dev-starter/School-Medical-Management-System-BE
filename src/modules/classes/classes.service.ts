@@ -1,11 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { Class, ClassDocument } from './classes.schema';
 import { CreateClassDTO, SearchClassDTO, UpdateClassDTO } from './dto';
 import { Grade, GradeDocument } from '../grades/grades.schema';
+import { IClassWithGrade, IClassWithGradeWithCount } from './classes.interface';
 
 @Injectable()
 export class ClassesService {
@@ -23,7 +24,10 @@ export class ClassesService {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Khối không tồn tại');
         }
 
-        const item = new this.classModel(payload);
+        const item = new this.classModel({
+            ...payload,
+            gradeId: new Types.ObjectId(payload.gradeId),
+        });
         const savedClass = await item.save();
 
         await this.gradeModel.findByIdAndUpdate(payload.gradeId, {
@@ -33,15 +37,30 @@ export class ClassesService {
         return savedClass;
     }
 
-    async findOne(id: string): Promise<Class> {
+    async findOne(id: string): Promise<any> {
         const item = await this.classModel
             .findOne({ _id: id, isDeleted: false })
-            .populate('studentIds')
-            .populate('gradeId')
-            .exec();
-        if (!item) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lớp');
+            .populate({ path: 'students', select: '-createdAt -updatedAt -__v ' })
+            .populate({ path: 'gradeId', select: 'name positionOrder isDeleted' })
+            .lean()
+            .exec() as any;
+
+        if (!item) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lớp');
+
+        if (item.gradeId && typeof item.gradeId === 'object') {
+            const id = item.gradeId._id?.toString() || item.gradeId.id || '';
+            item.grade = {
+                name: item.gradeId.name,
+                positionOrder: item.gradeId.positionOrder,
+                deleted: item.gradeId.isDeleted,
+            };
+            item.gradeId = id;
         }
+
+        if (item.students?.length) {
+            item.students = item.students.map(({ createdAt, updatedAt, __v, classId, ...rest }) => rest);
+        }
+
         return item;
     }
 
@@ -82,7 +101,7 @@ export class ClassesService {
     }
 
 
-    async search(params: SearchClassDTO) {
+    async search(params: SearchClassDTO): Promise<SearchPaginationResponseModel<IClassWithGradeWithCount>> {
         const { pageNum, pageSize, query } = params;
         const filters: any = {};
         if (query?.trim()) {
@@ -90,17 +109,35 @@ export class ClassesService {
         }
 
         const totalItems = await this.classModel.countDocuments(filters);
+
         const items = await this.classModel
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
             .populate('gradeId')
-            .populate('studentIds')
-            .lean();
+            .lean() as unknown as (Class & { gradeId?: any, studentIds?: any[] })[];
+
+        const mappedItems: IClassWithGradeWithCount[] = items.map(({ gradeId, studentIds = [], ...rest }) => {
+            const grade = gradeId;
+            const totalStudents = studentIds.length;
+
+            return {
+                ...rest,
+                gradeId: grade?._id,
+                studentIds,
+                totalStudents,
+                grade: grade ? {
+                    name: grade.name,
+                    positionOrder: grade.positionOrder,
+                    isDeleted: grade.isDeleted,
+                } : null,
+            };
+        });
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(items, pageInfo);
+        return new SearchPaginationResponseModel(mappedItems, pageInfo);
     }
+
 
     async remove(id: string): Promise<boolean> {
         const category = await this.classModel.findOne({ _id: id, isDeleted: false });

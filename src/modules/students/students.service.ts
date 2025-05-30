@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { Student, StudentDocument } from './students.schema';
@@ -34,7 +34,10 @@ export class StudentsService {
             ...payload,
             position,
             studentCode,
+            classId: new Types.ObjectId(payload.classId),
         });
+
+
 
         const savedStudent = await item.save();
 

@@ -3,7 +3,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class MailService {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(private readonly mailerService: MailerService) { }
 
   async sendWelcomeEmail(to: string, subject: string, text: string) {
     await this.mailerService.sendMail({
@@ -12,7 +12,25 @@ export class MailService {
       text
       //   template: './welcome', // File template email (welcome.hbs)
       //   context: { username }, // Truyền biến vào template
-      
+
+    });
+  }
+
+  async send(options: {
+    to: string;
+    subject: string;
+    text?: string;
+    html?: string;
+    template?: string;
+    context?: any;
+  }) {
+    return await this.mailerService.sendMail({
+      to: options.to,
+      subject: options.subject,
+      text: options.text,
+      html: options.html,
+      template: options.template,
+      context: options.context,
     });
   }
 
@@ -36,7 +54,7 @@ export class MailService {
     `;
 
     await this.mailerService.sendMail({
-      to, 
+      to,
       subject,
       html: htmlContent,
     });
