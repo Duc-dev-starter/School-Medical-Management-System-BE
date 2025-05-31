@@ -30,6 +30,7 @@ import { MedicalCheckEventsModule } from './modules/medical-check-events/medical
 import { MedicalCheckRegistrationsModule } from './modules/medical-check-registrations/medical-check-registrations.module';
 import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointments/medical-check-appointments.module';
 import { BullModule } from '@nestjs/bull';
+import { MailModule } from './common/modules/mail.module';
 
 
 
@@ -54,6 +55,7 @@ import { BullModule } from '@nestjs/bull';
     MedicalCheckEventsModule,
     MedicalCheckRegistrationsModule,
     MedicalCheckAppointmentsModule,
+    MailModule,
     CacheModule.registerAsync(redisCacheConfig()),
 
     ConfigModule.forRoot({
@@ -91,25 +93,7 @@ import { BullModule } from '@nestjs/bull';
       inject: [ConfigService],
     }),
 
-    // Cấu hình gửi mail
-    MailerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          auth: {
-            user: configService.get<string>('MAIL_USER'),
-            pass: configService.get<string>('MAIL_PASS'),
-          },
-        },
-        defaults: {
-          from: configService.get<string>('MAIL_USER'),
-        },
-      }),
-    }),
+
   ],
   controllers: [AppController],
   providers: [

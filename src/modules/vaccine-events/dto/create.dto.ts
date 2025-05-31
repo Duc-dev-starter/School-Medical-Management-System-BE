@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsDateString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsOptional, IsEnum } from 'class-validator';
+import { EventStatus } from 'src/common/enums';
 
 export class CreateVaccineEventDTO {
     @ApiProperty({ example: 'Tiêm phòng cúm mùa', description: 'Tiêu đề sự kiện tiêm chủng', uniqueItems: true })
@@ -36,4 +37,15 @@ export class CreateVaccineEventDTO {
     @IsNotEmpty()
     @IsDateString()
     endDate: Date;
+
+    @ApiProperty({
+        example: 'ongoing',
+        description: 'Trạng thái sự kiện',
+        enum: EventStatus,
+        default: EventStatus.Ongoing,
+        required: false,
+    })
+    @IsOptional()
+    @IsEnum(EventStatus)
+    status?: EventStatus;
 }

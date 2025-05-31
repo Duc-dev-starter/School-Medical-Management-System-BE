@@ -31,9 +31,6 @@ export class Student {
     @Prop({ required: true, })
     studentCode: string;
 
-    @Prop()
-    position: number;
-
 }
 
 export const StudentSchema = SchemaFactory.createForClass(Student);

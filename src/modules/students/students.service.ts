@@ -49,16 +49,30 @@ export class StudentsService {
     }
 
 
-    async findOne(id: string): Promise<Student> {
+    async findOne(id: string): Promise<any> {
         const item = await this.studentModel
             .findOne({ _id: id, isDeleted: false })
-            .populate('classId')
-            .populate('parentId')
-            .exec();
+            .populate({
+                path: 'classId',
+                select: 'name',
+            })
+            .lean()
+            .exec() as any;
 
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
+
+        // Xử lý classId: vừa giữ id, vừa có object
+        if (item.classId && typeof item.classId === 'object') {
+            const id = item.classId._id?.toString() || item.classId.id || '';
+            item.className = item.classId.name,
+                item.classId = id;
+        }
+
+        delete item.createdAt;
+        delete item.updatedAt;
+        delete item.__v;
 
         return item;
     }
@@ -95,12 +109,30 @@ export class StudentsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
-            .populate('parentId')
-            .populate('classId')
-            .lean();
+            .populate({
+                path: 'classId',
+                select: 'name gradeId'
+            })
+            .lean().exec() as any;
 
+        const mappedItems = items.map(student => {
+            let classObj = student.classId;
+            let classId = '';
+            if (classObj && typeof classObj === 'object') {
+                classId = classObj._id?.toString() || classObj.id || '';
+                student.class = {
+                    _id: classId,
+                    name: classObj.name,
+                    gradeId: classObj.gradeId,
+                };
+                student.classId = classId;
+            }
+
+            delete student.__v;
+            return student;
+        });
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(items, pageInfo);
+        return new SearchPaginationResponseModel(mappedItems, pageInfo);
     }
 
     async remove(id: string): Promise<boolean> {

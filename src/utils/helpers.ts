@@ -52,3 +52,10 @@ export const generateCacheKey = (prefix: string, obj: any) => {
   const hash = crypto.createHash('md5').update(JSON.stringify(obj)).digest('hex');
   return `${prefix}:${hash}`;
 }
+
+
+export const formatDateTime = (input: Date) => {
+  const d = new Date(input);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

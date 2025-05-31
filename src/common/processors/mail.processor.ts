@@ -8,13 +8,19 @@ export class MailProcessor {
 
     @Process('send-vaccine-mail')
     async handleSendMail(job: Job) {
-        const { to, subject, template, context } = job.data;
-
-        await this.mailService.send({
-            to,
-            subject,
-            template,
-            context,
-        });
+        const { to, subject, template, context, html } = job.data;
+        try {
+            await this.mailService.send({
+                to,
+                subject,
+                template,
+                context,
+                html
+            });
+            console.log('Gửi mail thành công:', job.data);
+        } catch (error) {
+            console.error('Lỗi gửi mail:', error.message);
+            console.error(error);
+        }
     }
 }
