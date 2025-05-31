@@ -60,7 +60,7 @@ export class BlogsService {
     return newBlog;
   }
 
-  async findOne(id: string): Promise<Blog> {
+  async findOne(id: string): Promise<any> {
     if (!id) {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có blogId');
     }
@@ -73,16 +73,28 @@ export class BlogsService {
       return JSON.parse(cachedBlog as string);
     }
 
-    const blog = await this.blogModel.findOne({ id, isDeleted: false }).exec();
+    const blog = await this.blogModel
+      .findOne({ _id: id, isDeleted: false })
+      .populate({ path: 'categoryId', select: 'name' })
+      .populate({ path: 'userId', select: 'fullName' })
+      .lean()
+      .exec();
 
     if (!blog) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy blog');
     }
 
-    await this.cacheManager.set(cacheKey, JSON.stringify(blog), 60 * 1000);
+    const result = {
+      ...blog,
+      categoryId: (blog.categoryId as any)?._id?.toString() || (blog.categoryId as any)?.toString() || null,
+      userId: (blog.userId as any)?._id?.toString() || (blog.userId as any)?.toString() || null,
+      categoryName: (blog.categoryId as any)?.name || null,
+      username: (blog.userId as any)?.fullName || null,
+    };
+    await this.cacheManager.set(cacheKey, JSON.stringify(result), 60 * 1000);
     console.log('✅ Đã lưu blog vào cache');
+    return result;
 
-    return blog;
   }
 
   async update(id: string, updateData: UpdateBlogDTO, user: IUser): Promise<Blog> {
@@ -116,20 +128,12 @@ export class BlogsService {
     return updatedBlog;
   }
   async search(params: SearchBlogDTO) {
-    console.log(params)
     const cacheKey = `blogs:search:${JSON.stringify(params)}`;
-    console.log(`🔑 Cache key for search: ${cacheKey}`);
-
     const cached = await this.cacheManager.get(cacheKey);
-    console.log(cached)
     if (cached) {
-      console.log('✅ Lấy kết quả tìm kiếm từ cache');
       return cached;
-    } else {
-      console.log('⛔ Không tìm thấy trong cache, truy vấn DB...');
     }
 
-    // Truy vấn database
     const { pageNum, pageSize, query, categoryId, userId } = params;
     const filters: any = { isDeleted: false };
 
@@ -148,17 +152,27 @@ export class BlogsService {
       .find(filters)
       .skip((pageNum - 1) * pageSize)
       .limit(pageSize)
+      .populate({ path: 'categoryId', select: 'name' })
+      .populate({ path: 'userId', select: 'fullName' }) // hoặc 'username'
       .lean();
 
-    const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-    const result = new SearchPaginationResponseModel(blogs, pageInfo);
+    // Chuyển id về string và thêm name
+    const transformedBlogs = blogs.map(blog => ({
+      ...blog,
+      categoryId: (blog.categoryId as any)?._id?.toString() || (blog.categoryId as any)?.toString() || null,
+      userId: (blog.userId as any)?._id?.toString() || (blog.userId as any)?.toString() || null,
+      categoryName: (blog.categoryId as any)?.name || null,
+      username: (blog.userId as any)?.fullName || null,
+    }));
 
-    // Lưu vào cache
-    await this.cacheManager.set(cacheKey, result, 60 * 1000); // Lưu trong 60 giây
-    console.log(`📦 Đã lưu kết quả vào cache với key: ${cacheKey}`); // Log khi lưu cache
+    const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
+    const result = new SearchPaginationResponseModel(transformedBlogs, pageInfo);
+
+    await this.cacheManager.set(cacheKey, result, 60 * 1000);
 
     return result;
   }
+
   async remove(id: string, user: IUser): Promise<boolean> {
     const blog = await this.blogModel.findOne({ _id: id, isDeleted: false });
 
