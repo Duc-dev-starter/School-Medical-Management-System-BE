@@ -13,7 +13,7 @@ export class VaccineAppoimentsService {
     async create(payload: CreateVaccineAppointmentDTO): Promise<VaccineAppointment> {
         const existing = await this.vaccineAppointmentModel.findOne({ studentId: payload.studentId, isDeleted: false });
         if (existing) {
-            throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh đã tồn tại');
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Đơn đã tồn tại');
         }
 
         const item = new this.vaccineAppointmentModel(payload);

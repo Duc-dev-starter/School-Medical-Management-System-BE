@@ -48,4 +48,9 @@ export class CreateVaccineEventDTO {
     @IsOptional()
     @IsEnum(EventStatus)
     status?: EventStatus;
+
+    @ApiProperty({ example: '2025-06-10T23:59:59Z', description: 'Thời gian kết thúc đăng ký' })
+    @IsNotEmpty()
+    @IsDateString()
+    registrationDeadline: string;
 }

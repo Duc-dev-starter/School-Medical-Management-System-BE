@@ -2,6 +2,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
+import { AppointmentStatus } from 'src/common/enums';
 
 export type VaccineAppointmentDocument = HydratedDocument<VaccineAppointment>;
 
@@ -28,6 +29,14 @@ export class VaccineAppointment {
     @Prop()
     notes?: string;
 
+    @Prop({ type: Boolean, default: false })
+    isDeleted: boolean;
+
+    @Prop({ default: AppointmentStatus.Pending, enum: ['pending', 'checked', 'cancelled', "ineligible", 'vaccinated'] })
+    status: string;
+
+    @Prop({ type: Date })
+    vaccinatedAt?: Date;
 }
 
 export const VaccineAppointmentSchema = SchemaFactory.createForClass(VaccineAppointment);

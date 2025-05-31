@@ -17,7 +17,6 @@ export class MailProcessor {
                 context,
                 html
             });
-            console.log('Gửi mail thành công:', job.data);
         } catch (error) {
             console.error('Lỗi gửi mail:', error.message);
             console.error(error);

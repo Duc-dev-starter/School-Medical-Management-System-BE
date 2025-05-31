@@ -12,6 +12,8 @@ import { Class, ClassSchema } from '../classes/classes.schema';
 import { MailModule } from 'src/common/modules/mail.module';
 import { Grade, GradeSchema } from '../grades/grades.schema';
 import { GradesModule } from '../grades/grades.module';
+import { VaccineRegistration, VaccineRegistrationSchema } from '../vaccine-registrations/vaccine-registrations.schema';
+import { VaccineRegistrationsModule } from '../vaccine-registrations/vaccine-registrations.module';
 
 @Module({
     imports: [
@@ -20,6 +22,7 @@ import { GradesModule } from '../grades/grades.module';
         { name: User.name, schema: UserSchema },
         { name: Class.name, schema: ClassSchema },
         { name: Grade.name, schema: GradeSchema },
+        { name: VaccineRegistration.name, schema: VaccineRegistrationSchema },
         ]),
         BullModule.registerQueue({
             name: 'mailQueue',
@@ -27,7 +30,8 @@ import { GradesModule } from '../grades/grades.module';
         UsersModule,
         StudentsModule,
         MailModule,
-        GradesModule
+        GradesModule,
+        VaccineRegistrationsModule
     ],
     controllers: [VaccineEventsController],
     providers: [VaccineEventServices],

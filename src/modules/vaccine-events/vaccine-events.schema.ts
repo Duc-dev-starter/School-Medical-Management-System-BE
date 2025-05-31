@@ -34,6 +34,9 @@ export class VaccineEvent {
 
     @Prop({ default: 'ongoing', enum: ['ongoing', 'completed', 'cancelled'] })
     status: string;
+
+    @Prop({ required: true })
+    registrationDeadline: Date;
 }
 
 export const VaccineEventSchema = SchemaFactory.createForClass(VaccineEvent);

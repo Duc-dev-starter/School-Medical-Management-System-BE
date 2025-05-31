@@ -29,7 +29,6 @@ export class ClassesController {
     @ApiBody({ type: CreateClassDTO })
     @Post('create')
     async create(@Body() model: CreateClassDTO, @Request() req) {
-        console.log(model, req.user);
         const result = await this.classService.create(model);
         return formatResponse<Class>(result);
     }

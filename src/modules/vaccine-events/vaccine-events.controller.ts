@@ -5,6 +5,7 @@ import {
     Get,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -16,7 +17,7 @@ import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
 import { VaccineEventServices } from './vaccine-events.service';
-import { CreateVaccineEventDTO, SearchVaccineEventDTO, UpdateVaccineEventDTO } from './dto';
+import { CreateVaccineEventDTO, SearchVaccineEventDTO, UpdateEventStatusDTO, UpdateVaccineEventDTO } from './dto';
 import { VaccineEvent } from './vaccine-events.schema';
 
 @ApiTags('Vaccine Events')
@@ -75,5 +76,16 @@ export class VaccineEventsController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.vaccineEventService.remove(id);
         return formatResponse<boolean>(result);
+    }
+
+    @Patch(':id/status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cập nhật trạng thái sự kiện tiêm vaccine' })
+    @ApiResponse({ status: 200, description: 'Thay đổi thành công' })
+    async updateStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateEventStatusDTO,
+    ) {
+        return this.vaccineEventService.updateStatus(id, dto.status);
     }
 }

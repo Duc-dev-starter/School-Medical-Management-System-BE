@@ -13,6 +13,7 @@ import { Queue } from 'bull';
 import { Class, ClassDocument } from '../classes/classes.schema';
 import { formatDateTime } from 'src/utils/helpers';
 import { Grade, GradeDocument } from '../grades/grades.schema';
+import { VaccineRegistration } from '../vaccine-registrations/vaccine-registrations.schema';
 
 @Injectable()
 export class VaccineEventServices {
@@ -28,6 +29,9 @@ export class VaccineEventServices {
 
         @InjectModel(Grade.name)
         private gradeModel: Model<GradeDocument>,
+
+        @InjectModel(VaccineRegistration.name)
+        private vaccineRegistrationModel: Model<GradeDocument>,
 
         @InjectQueue('mailQueue')
         private readonly mailQueue: Queue,) { }
@@ -116,6 +120,16 @@ export class VaccineEventServices {
             }
         }
 
+        for (const student of students) {
+            const reg = new this.vaccineRegistrationModel({
+                parentId: student.parentId,
+                studentId: student._id,
+                eventId: savedEvent._id,
+                status: 'pending',
+            });
+            await reg.save();
+        }
+
         return savedEvent;
     }
 
@@ -162,5 +176,15 @@ export class VaccineEventServices {
         }
         await this.vaccineEventModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+    async updateStatus(id: string, status: string) {
+        const event = await this.vaccineEventModel.findByIdAndUpdate(
+            id,
+            { status, isDeleted: false },
+            { new: true },
+        );
+        if (!event) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
+        return event;
     }
 }

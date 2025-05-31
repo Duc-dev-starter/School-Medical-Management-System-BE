@@ -4,7 +4,8 @@ import { Model } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { VaccineRegistration, VaccineRegistrationDocument } from './vaccine-registrations.schema';
-import { CreateVaccineRegistrationDTO, SearchVaccineRegistrationDTO, UpdateVaccineRegistrationDTO } from './dto';
+import { CreateVaccineRegistrationDTO, SearchVaccineRegistrationDTO, UpdateRegistrationStatusDTO, UpdateVaccineRegistrationDTO } from './dto';
+import { RegistrationStatus } from 'src/common/enums';
 
 @Injectable()
 export class VaccineRegistrationsServices {
@@ -23,7 +24,7 @@ export class VaccineRegistrationsServices {
     async findOne(id: string): Promise<VaccineRegistration> {
         const item = await this.vaccineRegistrationModel.findOne({ _id: id, isDeleted: false });
         if (!item) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn');
         }
         return item;
     }
@@ -67,5 +68,39 @@ export class VaccineRegistrationsServices {
         }
         await this.vaccineRegistrationModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+    async updateStatus(id: string, dto: UpdateRegistrationStatusDTO) {
+        const reg = await this.vaccineRegistrationModel.findOne({ _id: id, isDeleted: false });
+        if (!reg) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn đăng kí');
+
+        // Không cho phép chuyển về "pending"
+        if (reg.status !== RegistrationStatus.Pending) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Chỉ được cập nhật trạng thái khi đơn đang ở trạng thái pending');
+        }
+        if (dto.status === RegistrationStatus.Pending) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không thể chuyển trạng thái về pending');
+        }
+
+        // Nếu chuyển sang "rejected" mà không có lý do
+        if (dto.status === RegistrationStatus.Rejected && !dto.cancellationReason) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Phải có lý do khi từ chối đơn');
+        }
+
+        reg.status = dto.status;
+        if (dto.status === RegistrationStatus.Approved) {
+            reg.approvedAt = new Date();
+            reg.cancellationReason = undefined;
+        }
+        if (dto.status === RegistrationStatus.Rejected) {
+            reg.cancellationReason = dto.cancellationReason;
+        }
+        if (dto.status === RegistrationStatus.Cancelled) {
+            // Cho phép điền lý do hủy nếu muốn
+            reg.cancellationReason = dto.cancellationReason;
+        }
+
+        await reg.save();
+        return reg;
     }
 }

@@ -25,7 +25,11 @@ export class VaccineRegistration {
     note?: string;
 
     @Prop({ type: Date })
-    confirmedAt?: Date;
+    approvedAt?: Date;
+
+    @Prop({ type: Boolean, default: false })
+    isDeleted: boolean;
+
 }
 
 export const VaccineRegistrationSchema = SchemaFactory.createForClass(VaccineRegistration);

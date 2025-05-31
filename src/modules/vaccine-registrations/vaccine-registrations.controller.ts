@@ -5,6 +5,7 @@ import {
     Get,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -15,7 +16,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, 
 import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
-import { CreateVaccineRegistrationDTO, SearchVaccineRegistrationDTO, UpdateVaccineRegistrationDTO } from './dto';
+import { CreateVaccineRegistrationDTO, SearchVaccineRegistrationDTO, UpdateRegistrationStatusDTO, UpdateVaccineRegistrationDTO } from './dto';
 import { VaccineRegistration } from './vaccine-registrations.schema';
 import { VaccineRegistrationsServices } from './vaccine-registrations.service';
 
@@ -28,7 +29,6 @@ export class VaccineRegistrationsController {
     @ApiBody({ type: CreateVaccineRegistrationDTO })
     @Post('create')
     async create(@Body() model: CreateVaccineRegistrationDTO, @Request() req) {
-        console.log(model, req.user);
         const result = await this.vaccineRegistrationService.create(model);
         return formatResponse<VaccineRegistration>(result);
     }
@@ -75,5 +75,16 @@ export class VaccineRegistrationsController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.vaccineRegistrationService.remove(id);
         return formatResponse<boolean>(result);
+    }
+
+    @Patch(':id/status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cập nhật trạng thái đơn đăng ký tiêm vaccine' })
+    @ApiResponse({ status: 200, description: 'Thay đổi thành công' })
+    async updateStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateRegistrationStatusDTO,
+    ) {
+        return this.vaccineRegistrationService.updateStatus(id, dto);
     }
 }
