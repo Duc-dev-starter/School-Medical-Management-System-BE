@@ -21,3 +21,15 @@ export class Grade {
 }
 
 export const GradeSchema = SchemaFactory.createForClass(Grade);
+
+GradeSchema.virtual('classes', {
+    ref: 'Class',
+    localField: '_id',
+    foreignField: 'gradeId',
+    justOne: false
+});
+
+
+
+GradeSchema.set('toObject', { virtuals: true });
+GradeSchema.set('toJSON', { virtuals: true });

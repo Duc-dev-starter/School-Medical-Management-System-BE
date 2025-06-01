@@ -19,17 +19,30 @@ export class GradesService {
         const grade = new this.gradeModel(payload);
         return await grade.save();
     }
-
-    async findOne(id: string): Promise<Grade> {
+    async findOne(id: string): Promise<any> {
         const grade = await this.gradeModel
             .findOne({ _id: id, isDeleted: false })
-            .populate('classIds')
-            .exec();
+            .populate({
+                path: 'classes',
+                select: '_id name isDeleted studentIds',
+            })
+            .lean() as any;
 
         if (!grade) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy khối');
         }
-        return grade;
+
+        const mappedClasses = (grade.classes || []).map((cls: any) => ({
+            _id: cls._id,
+            name: cls.name,
+            isDeleted: cls.isDeleted,
+            totalStudents: Array.isArray(cls.studentIds) ? cls.studentIds.length : 0,
+        }));
+
+        return {
+            ...grade,
+            classes: mappedClasses,
+        };
     }
 
     async update(id: string, data: UpdateGradeDTO): Promise<Grade> {
@@ -60,13 +73,26 @@ export class GradesService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
-            .populate('classIds')
-            .lean();
+            .populate({
+                path: 'classes',
+                select: 'name isDeleted studentIds'
+            })
+            .lean() as any;
+
+        const result = items.map(item => ({
+            ...item,
+            classes: (item.classes || []).map((cls: any) => ({
+                _id: cls._id,
+                name: cls.name,
+                isDeleted: cls.isDeleted,
+                totalStudents: Array.isArray(cls.studentIds) ? cls.studentIds.length : 0,
+            }))
+        }));
+
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(items, pageInfo);
+        return new SearchPaginationResponseModel(result, pageInfo);
     }
-
     async remove(id: string): Promise<boolean> {
         const category = await this.gradeModel.findOne({ _id: id, isDeleted: false });
         if (!category) {
