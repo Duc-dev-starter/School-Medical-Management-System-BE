@@ -9,6 +9,7 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { SearchUserDTO, UpdateUserDTO } from './dto';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { Student, StudentDocument } from '../students/students.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -205,5 +206,32 @@ export class UsersService {
       studentCode: s.studentCode,
     }));
   }
+
+  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<boolean> {
+    const user = await this.userModel.findOne({ _id: userId, isDeleted: false });
+    if (!user) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Mật khẩu cũ không chính xác');
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.password = hash;
+    await user.save();
+    return true;
+  }
+
+  async getCurrentUser(userId: string): Promise<UserWithoutPassword> {
+    const user = await this.userModel.findOne({ _id: userId, isDeleted: false }).lean();
+    if (!user) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
+    }
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword as UserWithoutPassword;
+  }
+
 
 }
