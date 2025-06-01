@@ -5,6 +5,7 @@ import {
     Get,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -16,7 +17,7 @@ import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
 import { VaccineAppoimentsService } from './vaccine-appointments.service';
-import { CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
+import { CheckVaccineAppointmentDTO, CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
 import { VaccineAppointment } from './vaccine-appoinments.schema';
 
 
@@ -77,5 +78,17 @@ export class VaccineAppoimentsController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.vaccineAppointmentService.remove(id);
         return formatResponse<boolean>(result);
+    }
+
+    @Patch(':id/check')
+    @ApiOperation({ summary: 'Điều dưỡng xác nhận kiểm tra lịch hẹn tiêm cho học sinh' })
+    @ApiResponse({ status: 200, description: 'Thành công' })
+    @ApiResponse({ status: 403, description: 'Không đủ quyền' })
+    async nurseCheck(
+        @Param('id') id: string,
+        @Body() body: CheckVaccineAppointmentDTO,
+        @Request() req
+    ) {
+        return this.vaccineAppointmentService.nurseCheckAppointment(id, req.user, body);
     }
 }

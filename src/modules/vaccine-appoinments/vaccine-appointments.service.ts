@@ -1,10 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { VaccineAppointment, VaccineAppointmentDocument } from './vaccine-appoinments.schema';
-import { CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
+import { CheckVaccineAppointmentDTO, CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
+import { AppointmentStatus, Role } from 'src/common/enums';
+import { IUser } from '../users/users.interface';
 
 @Injectable()
 export class VaccineAppoimentsService {
@@ -64,5 +66,44 @@ export class VaccineAppoimentsService {
         }
         await this.vaccineAppointmentModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+
+
+    async nurseCheckAppointment(
+        id: string,
+        user: IUser,
+        data: CheckVaccineAppointmentDTO
+    ) {
+        if (user.role !== Role.School_Nurse) {
+            throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không thể xóa nếu không phải y tá');
+        }
+        const appo = await this.vaccineAppointmentModel.findOne({ _id: id, isDeleted: false });
+        if (!appo) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
+
+        const nurseId = user._id;
+        appo.checkedBy = new Types.ObjectId(nurseId);
+        appo.bloodPressure = data.bloodPressure;
+        appo.isEligible = data.isEligible;
+        appo.notes = data.notes;
+
+        if (!data.isEligible) {
+            appo.status = AppointmentStatus.Ineligible;
+            appo.reasonIfIneligible = data.reasonIfIneligible || 'Không đủ điều kiện tiêm';
+            appo.vaccinatedAt = undefined;
+        } else {
+            if (data.vaccinatedAt) {
+                appo.status = AppointmentStatus.Vaccinated;
+                appo.vaccinatedAt = data.vaccinatedAt;
+                appo.reasonIfIneligible = undefined;
+            } else {
+                appo.status = AppointmentStatus.Checked;
+                appo.vaccinatedAt = undefined;
+                appo.reasonIfIneligible = undefined;
+            }
+        }
+
+        await appo.save();
+        return appo;
     }
 }
