@@ -52,10 +52,16 @@ export class StudentsService {
     async findOne(id: string): Promise<any> {
         const item = await this.studentModel
             .findOne({ _id: id, isDeleted: false })
-            .populate({
-                path: 'classId',
-                select: 'name',
-            })
+            .populate([
+                {
+                    path: 'class',
+                    select: 'name positionOrder isDeleted',
+                },
+                {
+                    path: 'parent',
+                    select: 'fullName phone email isDeleted role',
+                },
+            ])
             .lean()
             .exec() as any;
 
@@ -63,11 +69,29 @@ export class StudentsService {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
 
-        // Xử lý classId: vừa giữ id, vừa có object
         if (item.classId && typeof item.classId === 'object') {
-            const id = item.classId._id?.toString() || item.classId.id || '';
-            item.className = item.classId.name,
-                item.classId = id;
+            item.classId = item.classId._id?.toString() || item.classId.id || '';
+        }
+        if (item.parentId && typeof item.parentId === 'object') {
+            item.parentId = item.parentId._id?.toString() || item.parentId.id || '';
+        }
+
+        if (item.classInfo) {
+            item.classInfo = {
+                _id: item.classInfo._id,
+                name: item.classInfo.name,
+                positionOrder: item.classInfo.positionOrder,
+                isDeleted: item.classInfo.isDeleted,
+            };
+        }
+
+        if (item.parentInfo) {
+            item.parentInfo = {
+                _id: item.parentInfo._id,
+                fullName: item.parentInfo.fullName,
+                phone: item.parentInfo.phone,
+                email: item.parentInfo.email,
+            };
         }
 
         delete item.createdAt;
