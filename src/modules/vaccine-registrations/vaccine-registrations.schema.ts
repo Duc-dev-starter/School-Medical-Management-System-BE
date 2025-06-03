@@ -34,3 +34,26 @@ export class VaccineRegistration {
 
 export const VaccineRegistrationSchema = SchemaFactory.createForClass(VaccineRegistration);
 
+VaccineRegistrationSchema.virtual('parent', {
+    ref: 'User', // Tên model
+    localField: 'parentId',
+    foreignField: '_id',
+    justOne: true
+});
+
+VaccineRegistrationSchema.virtual('student', {
+    ref: 'Student',
+    localField: 'studentId',
+    foreignField: '_id',
+    justOne: true
+});
+
+VaccineRegistrationSchema.virtual('event', {
+    ref: 'MedicalCheckEvent',
+    localField: 'eventId',
+    foreignField: '_id',
+    justOne: true
+});
+
+VaccineRegistrationSchema.set('toObject', { virtuals: true });
+VaccineRegistrationSchema.set('toJSON', { virtuals: true });

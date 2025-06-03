@@ -1,7 +1,11 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationRequestModel } from 'src/common/models';
-import { Role } from 'src/common/enums';
+
+export enum LimitedRole {
+    Parent = 'parent',
+    School_Nurse = 'school-nurse',
+}
 
 export class SearchUserDTO extends PaginationRequestModel {
     @IsOptional()
@@ -13,11 +17,11 @@ export class SearchUserDTO extends PaginationRequestModel {
     query?: string;
 
     @IsOptional()
-    @IsEnum(Role)
+    @IsEnum(LimitedRole)
     @ApiProperty({
-        description: 'Vai trò của người dùng',
-        enum: Role,
+        description: 'Vai trò của người dùng chỉ cho phép parent hoặc school-nurse',
+        enum: LimitedRole,
         required: false,
     })
-    role?: Role;
+    role?: LimitedRole;
 }

@@ -31,3 +31,27 @@ export class MedicalCheckRegistration {
 }
 
 export const MedicalCheckRegistrationSchema = SchemaFactory.createForClass(MedicalCheckRegistration);
+
+MedicalCheckRegistrationSchema.virtual('parent', {
+    ref: 'User', // Tên model
+    localField: 'parentId',
+    foreignField: '_id',
+    justOne: true
+});
+
+MedicalCheckRegistrationSchema.virtual('student', {
+    ref: 'Student',
+    localField: 'studentId',
+    foreignField: '_id',
+    justOne: true
+});
+
+MedicalCheckRegistrationSchema.virtual('event', {
+    ref: 'MedicalCheckEvent',
+    localField: 'eventId',
+    foreignField: '_id',
+    justOne: true
+});
+
+MedicalCheckRegistrationSchema.set('toObject', { virtuals: true });
+MedicalCheckRegistrationSchema.set('toJSON', { virtuals: true });

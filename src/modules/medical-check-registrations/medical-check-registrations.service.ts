@@ -57,6 +57,9 @@ export class MedicalCheckRegistrationsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .populate('parent')
+            .populate('student')
+            .populate('event')
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
@@ -64,7 +67,11 @@ export class MedicalCheckRegistrationsService {
     }
 
     async findOne(id: string): Promise<MedicalCheckRegistration> {
-        const item = await this.medicalCheckregistrationModel.findById(id);
+        const item = await this.medicalCheckregistrationModel
+            .findById(id, { isDeleted: false })
+            .populate('parent')
+            .populate('student')
+            .populate('event');
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }

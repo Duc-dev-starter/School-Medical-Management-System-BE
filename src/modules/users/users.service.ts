@@ -131,6 +131,7 @@ export class UsersService {
     const { pageNum, pageSize, query, role } = params;
     const filters: any = { isDeleted: false };
 
+    filters.role = { $nin: ['admin', 'manager'] };
     if (role) filters.role = role;
 
     if (query?.trim()) {

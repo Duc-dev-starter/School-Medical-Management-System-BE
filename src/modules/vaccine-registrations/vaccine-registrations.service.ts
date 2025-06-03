@@ -43,9 +43,13 @@ export class VaccineRegistrationsServices {
     }
 
     async findOne(id: string): Promise<VaccineRegistration> {
-        const item = await this.vaccineRegistrationModel.findOne({ _id: id, isDeleted: false });
+        const item = await this.vaccineRegistrationModel
+            .findById(id, { isDeleted: false })
+            .populate('parent')
+            .populate('student')
+            .populate('event');
         if (!item) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn');
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }
         return item;
     }
@@ -76,6 +80,9 @@ export class VaccineRegistrationsServices {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .populate('parent')
+            .populate('student')
+            .populate('event')
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
