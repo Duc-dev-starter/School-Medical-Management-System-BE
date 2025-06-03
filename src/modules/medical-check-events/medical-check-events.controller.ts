@@ -5,6 +5,7 @@ import {
     Get,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -17,7 +18,7 @@ import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
 import { MedicalCheckEvent } from './medical-check-events.schema';
-import { CreateMedicalCheckEventDTO, SearchMedicalCheckEventDTO, UpdateMedicalCheckEventDTO } from './dto';
+import { CreateMedicalCheckEventDTO, SearchMedicalCheckEventDTO, UpdateEventStatusDTO, UpdateMedicalCheckEventDTO } from './dto';
 import { MedicalCheckEventsService } from './medical-check-events.service';
 
 @ApiTags('Medical Check Events')
@@ -77,5 +78,17 @@ export class MedicalCheckEventsController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.medicalCheckEventsService.remove(id);
         return formatResponse<boolean>(result);
+    }
+
+
+    @Patch(':id/status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cập nhật trạng thái sự kiện tiêm vaccine' })
+    @ApiResponse({ status: 200, description: 'Thay đổi thành công' })
+    async updateStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateEventStatusDTO,
+    ) {
+        return this.medicalCheckEventsService.updateStatus(id, dto.status);
     }
 }

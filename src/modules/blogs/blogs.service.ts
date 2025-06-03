@@ -9,6 +9,7 @@ import { CreateBlogDTO, SearchBlogDTO, UpdateBlogDTO } from './dto';
 import { CategoriesService } from '../categories/categories.service';
 import { IUser } from '../users/users.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { BlogWithComments } from './blogs.interface';
 
 @Injectable()
 export class BlogsService {
@@ -77,7 +78,14 @@ export class BlogsService {
       .findOne({ _id: id, isDeleted: false })
       .populate({ path: 'categoryId', select: 'name' })
       .populate({ path: 'userId', select: 'fullName' })
-      .lean()
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'userId',
+          select: 'fullName role',
+        }
+      })
+      .lean<BlogWithComments>()
       .exec();
 
     if (!blog) {
@@ -90,11 +98,17 @@ export class BlogsService {
       userId: (blog.userId as any)?._id?.toString() || (blog.userId as any)?.toString() || null,
       categoryName: (blog.categoryId as any)?.name || null,
       username: (blog.userId as any)?.fullName || null,
+      comments: (blog.comments || []).map((c: any) => ({
+        ...c,
+        username: c.userId?.fullName,
+        role: c.userId?.role,
+        userId: c.userId?._id?.toString() || c.userId,
+      })),
     };
+
     await this.cacheManager.set(cacheKey, JSON.stringify(result), 60 * 1000);
     console.log('✅ Đã lưu blog vào cache');
     return result;
-
   }
 
   async update(id: string, updateData: UpdateBlogDTO, user: IUser): Promise<Blog> {
@@ -153,16 +167,17 @@ export class BlogsService {
       .skip((pageNum - 1) * pageSize)
       .limit(pageSize)
       .populate({ path: 'categoryId', select: 'name' })
-      .populate({ path: 'userId', select: 'fullName' }) // hoặc 'username'
+      .populate({ path: 'userId', select: 'fullName' })
       .lean();
 
-    // Chuyển id về string và thêm name
+
     const transformedBlogs = blogs.map(blog => ({
       ...blog,
       categoryId: (blog.categoryId as any)?._id?.toString() || (blog.categoryId as any)?.toString() || null,
       userId: (blog.userId as any)?._id?.toString() || (blog.userId as any)?.toString() || null,
       categoryName: (blog.categoryId as any)?.name || null,
       username: (blog.userId as any)?.fullName || null,
+      totalComments: (blog.commentIds || []).length,
     }));
 
     const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);

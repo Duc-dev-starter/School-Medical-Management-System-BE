@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { AppointmentStatus } from 'src/common/enums';
 
 export type MedicalCheckAppointmentDocument = HydratedDocument<MedicalCheckAppointment>;
 
@@ -32,14 +33,25 @@ export class MedicalCheckAppointment {
     @Prop()
     heartRate?: number; // nhịp tim
 
-    @Prop()
-    notes?: string; // ghi chú khác
 
     @Prop({ default: false })
-    isHealthy: boolean; // đủ điều kiện sức khỏe không
+    isEligible: boolean; // đủ điều kiện tiêm hay không
 
     @Prop()
-    reasonIfUnhealthy?: string; // lý do không đủ điều kiện
+    reasonIfIneligible?: string;
+
+    @Prop()
+    notes?: string;
+
+    @Prop({ type: Boolean, default: false })
+    isDeleted: boolean;
+
+    @Prop({ default: AppointmentStatus.Pending, enum: ['pending', 'checked', 'cancelled', "ineligible", 'medicalChecked'] })
+    status: string;
+
+
+    @Prop({ type: Date })
+    medicalCheckedAt?: Date;
 }
 
 export const MedicalCheckAppointmentSchema = SchemaFactory.createForClass(MedicalCheckAppointment);

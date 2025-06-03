@@ -6,7 +6,7 @@ import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/comm
 import { Class, ClassDocument } from './classes.schema';
 import { CreateClassDTO, SearchClassDTO, UpdateClassDTO } from './dto';
 import { Grade, GradeDocument } from '../grades/grades.schema';
-import { IClassWithGrade, IClassWithGradeWithCount } from './classes.interface';
+import { IClassWithGradeWithCount } from './classes.interface';
 
 @Injectable()
 export class ClassesService {

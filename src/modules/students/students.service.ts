@@ -13,26 +13,17 @@ export class StudentsService {
         @InjectModel(Class.name) private classModel: Model<ClassDocument>,) { }
 
     async create(payload: CreateStudentDTO): Promise<Student> {
-        const { fullName, classId } = payload;
-
-        const existing = await this.studentModel.findOne({ fullName, isDeleted: false });
-        if (existing) {
-            throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh đã tồn tại');
-        }
+        const { classId } = payload;
 
         const existingClass = await this.classModel.findOne({ _id: classId, isDeleted: false });
         if (!existingClass) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
         }
 
-        const countInClass = await this.studentModel.countDocuments({ classId, isDeleted: false });
-        const position = countInClass + 1;
-
         const studentCode = `HS-${Date.now().toString().slice(-8)}`;
 
         const item = new this.studentModel({
             ...payload,
-            position,
             studentCode,
             classId: new Types.ObjectId(payload.classId),
         });

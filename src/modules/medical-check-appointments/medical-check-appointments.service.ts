@@ -1,11 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { IUser } from '../users/users.interface';
 import { MedicalCheckAppointment, MedicalCheckAppointmentDocument } from './medical-check-appointments.schema';
-import { CreateMedicalCheckAppointmentDTO, SearchMedicalCheckAppointmentDTO, UpdateMedicalCheckAppointmentDTO } from './dto';
+import { CheckMedicalCheckAppointmentDTO, CreateMedicalCheckAppointmentDTO, SearchMedicalCheckAppointmentDTO, UpdateMedicalCheckAppointmentDTO } from './dto';
+import { AppointmentStatus, Role } from 'src/common/enums';
 
 
 @Injectable()
@@ -68,5 +69,43 @@ export class MedicalCheckAppointmentsService {
         }
         await this.medicalCheckAppointmentmodel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+
+    async nurseCheckAppointment(
+        id: string,
+        user: IUser,
+        data: CheckMedicalCheckAppointmentDTO
+    ) {
+        if (user.role !== Role.School_Nurse) {
+            throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không thể sửa nếu không phải y tá');
+        }
+        const appo = await this.medicalCheckAppointmentmodel.findOne({ _id: id, isDeleted: false });
+        if (!appo) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
+
+        const nurseId = user._id;
+        appo.checkedBy = new Types.ObjectId(nurseId);
+        appo.bloodPressure = data.bloodPressure;
+        appo.isEligible = data.isEligible;
+        appo.notes = data.notes;
+
+        if (!data.isEligible) {
+            appo.status = AppointmentStatus.Ineligible;
+            appo.reasonIfIneligible = data.reasonIfIneligible || 'Không đủ điều kiện khám';
+            appo.medicalCheckedAt = undefined;
+        } else {
+            if (data.medicalCheckedAt) {
+                appo.status = AppointmentStatus.MedicalChecked;
+                appo.medicalCheckedAt = data.medicalCheckedAt;
+                appo.reasonIfIneligible = undefined;
+            } else {
+                appo.status = AppointmentStatus.Checked;
+                appo.medicalCheckedAt = undefined;
+                appo.reasonIfIneligible = undefined;
+            }
+        }
+
+        await appo.save();
+        return appo;
     }
 }

@@ -1,40 +1,54 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { Comment, CommentDocument } from './comments.schema';
 import { CreateCommentDTO, SearchCommentDTO, UpdateCommentDTO } from './dto';
-import { BlogsService } from '../blogs/blogs.service';
+import { Blog, BlogDocument } from '../blogs/blogs.schema';
 
 @Injectable()
 export class CommentsService {
   constructor(
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
-    private readonly blogService: BlogsService,
+    @InjectModel(Blog.name) private blogModel: Model<BlogDocument>,
   ) { }
 
   async create(payload: CreateCommentDTO, user): Promise<Comment> {
     const { content, blogId, parentId } = payload;
 
-    const blog = await this.blogService.findOne(blogId);
+    const blog = await this.blogModel.findOne({ _id: blogId, isDeleted: false });
     if (!blog) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Blog không tồn tại');
     }
 
+
+    let parentComment: CommentDocument | null = null;
     if (parentId) {
-      const parentComment = await this.commentModel.findOne({ _id: parentId, blogId });
+      parentComment = await this.commentModel.findOne({ _id: parentId, blogId });
       if (!parentComment) {
         throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Comment cha không tồn tại hoặc không thuộc blog này');
+      }
+      if (parentComment.parentId) {
+        throw new CustomHttpException(
+          HttpStatus.BAD_REQUEST,
+          'Chỉ được trả lời bình luận gốc (không được trả lời comment con)'
+        );
       }
     }
 
     const newComment = new this.commentModel({
       content,
       userId: user._id,
-      blogId,
+      blogId: new Types.ObjectId(blogId),
       parentId: parentId || null,
     });
+
+    await this.blogModel.findByIdAndUpdate(
+      blogId,
+      { $push: { commentIds: newComment._id } }
+    );
+
 
     try {
       await newComment.save();
@@ -125,6 +139,12 @@ export class CommentsService {
     }
 
     await this.commentModel.findByIdAndUpdate(id, { isDeleted: true });
+
+    await this.blogModel.findByIdAndUpdate(
+      comment.blogId,
+      { $pull: { commentIds: comment._id } }
+    );
+
     return true;
   }
 }

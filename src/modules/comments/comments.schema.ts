@@ -16,7 +16,7 @@ export class Comment {
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.BLOG, required: true })
     blogId: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.CATEGORY, default: null })
+    @Prop({ type: Types.ObjectId, ref: 'Comment', default: null })
     parentId?: Types.ObjectId;
 }
 

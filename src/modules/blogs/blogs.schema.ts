@@ -25,7 +25,18 @@ export class Blog {
     userId: Types.ObjectId;
 
     @Prop({ type: [{ type: Types.ObjectId, ref: 'Comment' }] })
-    comments: Types.ObjectId[];
+    commentIds: Types.ObjectId[];
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);
+
+
+BlogSchema.virtual('comments', {
+    ref: 'Comment',
+    localField: '_id',
+    foreignField: 'blogId',
+    justOne: false,
+});
+
+BlogSchema.set('toObject', { virtuals: true });
+BlogSchema.set('toJSON', { virtuals: true });

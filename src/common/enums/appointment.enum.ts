@@ -4,4 +4,5 @@ export enum AppointmentStatus {
     Ineligible = 'ineligible',   // Không đủ điều kiện tiêm
     Vaccinated = 'vaccinated',   // Đã tiêm vaccine
     Cancelled = 'cancelled',     // Lịch hẹn bị hủy
+    MedicalChecked = "medicalCheckedAt"
 }

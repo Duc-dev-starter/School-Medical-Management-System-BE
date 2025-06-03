@@ -22,6 +22,12 @@ export class MedicalCheckRegistration {
 
     @Prop()
     note?: string;
+
+    @Prop({ type: Date })
+    approvedAt?: Date;
+
+    @Prop({ type: Boolean, default: false })
+    isDeleted: boolean;
 }
 
 export const MedicalCheckRegistrationSchema = SchemaFactory.createForClass(MedicalCheckRegistration);
