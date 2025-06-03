@@ -55,3 +55,20 @@ export class MedicalCheckAppointment {
 }
 
 export const MedicalCheckAppointmentSchema = SchemaFactory.createForClass(MedicalCheckAppointment);
+
+MedicalCheckAppointmentSchema.virtual('student', {
+    ref: 'Student',
+    localField: 'studentId',
+    foreignField: '_id',
+    justOne: true
+});
+
+MedicalCheckAppointmentSchema.virtual('event', {
+    ref: 'VaccineEvent',
+    localField: 'eventId',
+    foreignField: '_id',
+    justOne: true
+});
+
+MedicalCheckAppointmentSchema.set('toObject', { virtuals: true });
+MedicalCheckAppointmentSchema.set('toJSON', { virtuals: true });

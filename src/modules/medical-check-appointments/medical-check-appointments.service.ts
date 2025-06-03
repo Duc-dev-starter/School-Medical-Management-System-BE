@@ -37,6 +37,9 @@ export class MedicalCheckAppointmentsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .populate('checkedBy')
+            .populate('student')
+            .populate('event')
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
@@ -44,12 +47,17 @@ export class MedicalCheckAppointmentsService {
     }
 
     async findOne(id: string): Promise<MedicalCheckAppointment> {
-        const item = await this.medicalCheckAppointmentmodel.findById(id);
+        const item = await this.medicalCheckAppointmentmodel
+            .findById(id, { isDeleted: false })
+            .populate('checkedBy')
+            .populate('student')
+            .populate('event');
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }
         return item;
     }
+
 
     async update(id: string, payload: UpdateMedicalCheckAppointmentDTO, user: IUser): Promise<MedicalCheckAppointment> {
         const updated = await this.medicalCheckAppointmentmodel.findByIdAndUpdate(id, payload, {
