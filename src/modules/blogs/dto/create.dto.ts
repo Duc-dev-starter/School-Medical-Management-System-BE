@@ -21,4 +21,13 @@ export class CreateBlogDTO {
   @IsNotEmpty()
   @IsMongoId()
   categoryId: string;
+
+  @ApiProperty({
+    example: 'url ảnh',
+    description: 'Ghi chú thêm (nếu có)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  image?: string;
 }

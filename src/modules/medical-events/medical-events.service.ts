@@ -36,6 +36,10 @@ export class MedicalEventsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .populate('student')
+            .populate('schoolNurse')
+            .populate('medicines')
+            .populate('medicalSupplies')
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
@@ -43,7 +47,12 @@ export class MedicalEventsService {
     }
 
     async findOne(id: string): Promise<MedicalEvent> {
-        const item = await this.medicalEventModel.findById(id);
+        const item = await this.medicalEventModel
+            .findById(id, { isDeleted: false })
+            .populate('student')
+            .populate('schoolNurse')
+            .populate('medicines')
+            .populate('medicalSupplies')
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }

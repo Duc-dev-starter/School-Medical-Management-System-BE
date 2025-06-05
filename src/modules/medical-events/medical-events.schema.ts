@@ -45,3 +45,35 @@ export class MedicalEvent {
 }
 
 export const MedicalEventSchema = SchemaFactory.createForClass(MedicalEvent);
+
+
+MedicalEventSchema.virtual('student', {
+    ref: HealthRecord.name,
+    localField: 'studentId',
+    foreignField: '_id',
+    justOne: true,
+});
+
+MedicalEventSchema.virtual('schoolNurse', {
+    ref: COLLECTION_NAME.USER,
+    localField: 'schoolNurseId',
+    foreignField: '_id',
+    justOne: true,
+});
+
+MedicalEventSchema.virtual('medicines', {
+    ref: Medicine.name,
+    localField: 'medicinesId',
+    foreignField: '_id',
+    justOne: false,
+});
+
+MedicalEventSchema.virtual('medicalSupplies', {
+    ref: MedicalSupply.name,
+    localField: 'medicalSuppliesId',
+    foreignField: '_id',
+    justOne: false,
+});
+
+MedicalEventSchema.set('toObject', { virtuals: true });
+MedicalEventSchema.set('toJSON', { virtuals: true });

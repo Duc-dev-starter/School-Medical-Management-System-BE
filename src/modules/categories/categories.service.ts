@@ -22,6 +22,7 @@ export class CategoriesService {
 
     async findOne(id: string): Promise<Category> {
         const category = await this.categoryModel.findOne({ _id: id, isDeleted: false });
+        console.log(category)
         if (!category) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy category');
         }
@@ -29,12 +30,19 @@ export class CategoriesService {
     }
 
     async update(id: string, data: UpdateCategoryDTO): Promise<Category> {
-        const updated = await this.categoryModel.findOne({ id, isDeleted: false }, { $set: data }, { new: true });
+        const updated = await this.categoryModel.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { $set: data },
+            { new: true }
+        );
+
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy category');
         }
+
         return updated;
     }
+
 
     async search(params: SearchCategoryDTO) {
         const { pageNum, pageSize, query } = params;
