@@ -18,7 +18,7 @@ export class MedicalEventsService {
     async create(payload: CreateMedicalEventDto, user: IUser): Promise<MedicalEvent> {
         const exists = await this.medicalEventModel.findOne({ eventName: payload.eventName, isDeleted: false });
         if (exists) {
-            throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên vật tư đã tồn tại');
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');
         }
         return this.medicalEventModel.create(payload);
     }
@@ -36,6 +36,7 @@ export class MedicalEventsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .sort({ createdAt: -1 })
             .populate('student')
             .populate('schoolNurse')
             .populate('medicines')

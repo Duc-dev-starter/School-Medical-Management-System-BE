@@ -4,6 +4,7 @@ import { HealthRecord } from '../health-records/health-records.schema';
 import { Medicine } from '../medicines/medicines.schema';
 import { MedicalSupply } from '../medical-supplies/medical-supplies.schema';
 import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
+import { Student } from '../students/students.schema';
 
 export type MedicalEventDocument = MedicalEvent & Document;
 
@@ -48,7 +49,7 @@ export const MedicalEventSchema = SchemaFactory.createForClass(MedicalEvent);
 
 
 MedicalEventSchema.virtual('student', {
-    ref: HealthRecord.name,
+    ref: Student.name,
     localField: 'studentId',
     foreignField: '_id',
     justOne: true,

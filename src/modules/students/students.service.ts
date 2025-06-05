@@ -128,7 +128,9 @@ export class StudentsService {
                 path: 'classId',
                 select: 'name gradeId'
             })
-            .lean().exec() as any;
+            .sort({ createdAt: -1 })
+            .lean().
+            exec() as any;
 
         const mappedItems = items.map(student => {
             let classObj = student.classId;

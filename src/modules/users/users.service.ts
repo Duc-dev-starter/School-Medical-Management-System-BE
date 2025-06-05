@@ -145,6 +145,8 @@ export class UsersService {
     const totalItems = await this.userModel.countDocuments(filters);
     const users = await this.userModel
       .find(filters)
+      .select('-password')
+      .sort({ createdAt: -1 })
       .skip((pageNum - 1) * pageSize)
       .limit(pageSize)
       .lean();

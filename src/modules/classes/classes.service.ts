@@ -114,6 +114,7 @@ export class ClassesService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .sort({ createdAt: -1 })
             .populate('gradeId')
             .lean() as unknown as (Class & { gradeId?: any, studentIds?: any[] })[];
 

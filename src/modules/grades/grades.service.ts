@@ -77,6 +77,7 @@ export class GradesService {
                 path: 'classes',
                 select: 'name isDeleted studentIds'
             })
+            .sort({ createdAt: -1 })
             .lean() as any;
 
         const result = items.map(item => ({

@@ -68,6 +68,7 @@ export class MedicinesService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .sort({ createdAt: -1 })
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);

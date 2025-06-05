@@ -57,6 +57,7 @@ export class VaccineAppoimentsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .sort({ createdAt: -1 })
             .populate('checkedBy')
             .populate('student')
             .populate('event')
