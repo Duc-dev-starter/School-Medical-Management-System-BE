@@ -19,7 +19,7 @@ import { MedicineSubmissionsService } from './medicine-submissions.service';
 import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO } from './dto';
 import { MedicineSubmission } from './medicine-submissions.schema';
 
-@ApiTags('MedicineSubmissions')
+@ApiTags('Medicine Submissions')
 @Controller('api/medicine-submissions')
 export class MedicineSubmissionsController {
     constructor(private readonly medicineSubmissionService: MedicineSubmissionsService) { }
@@ -38,7 +38,6 @@ export class MedicineSubmissionsController {
     @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
     @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
-    @ApiQuery({ name: 'categoryId', required: false, description: 'ID của danh mục medicine Submission' })
     @ApiResponse({ status: 200 })
     @Public()
     async findAll(@Query() query: SearchMedicineSubmissionDTO) {

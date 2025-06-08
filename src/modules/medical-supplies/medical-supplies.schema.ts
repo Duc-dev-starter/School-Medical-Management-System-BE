@@ -22,6 +22,9 @@ export class MedicalSupply {
 
     @Prop()
     supplier?: string;
+
+    @Prop({ default: false })
+    isDeleted: boolean;
 }
 
 export const MedicalSupplySchema = SchemaFactory.createForClass(MedicalSupply);

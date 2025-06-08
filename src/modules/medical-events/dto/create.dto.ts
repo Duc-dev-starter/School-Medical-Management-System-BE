@@ -7,6 +7,11 @@ export class CreateMedicalEventDto {
     @IsMongoId()
     studentId: string;
 
+    @ApiProperty({ description: 'ID của nurse', type: String })
+    @IsNotEmpty()
+    @IsMongoId()
+    schoolNurseId: string;
+
     @ApiProperty({ description: 'Loại sự kiện y tế' })
     @IsNotEmpty()
     @IsString()

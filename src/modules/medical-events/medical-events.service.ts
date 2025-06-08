@@ -1,18 +1,30 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { MedicalEvent, MedicalEventDocument } from './medical-events.schema';
 import { CreateMedicalEventDto, SearchMedicalEventDTO, UpdateMedicalEventDTO } from './dto';
 import { IUser } from '../users/users.interface';
+import { Student, StudentDocument } from '../students/students.schema';
+import { User, UserDocument } from '../users/users.schema';
+import { Medicine, MedicineDocument } from '../medicines/medicines.schema';
+import { MedicalSupply, MedicalSupplyDocument } from '../medical-supplies/medical-supplies.schema';
 
 
 @Injectable()
 export class MedicalEventsService {
     constructor(
         @InjectModel(MedicalEvent.name)
-        private medicalEventModel: Model<MedicalEventDocument>
+        private medicalEventModel: Model<MedicalEventDocument>,
+        @InjectModel(Student.name)
+        private studentModel: Model<StudentDocument>,
+        @InjectModel(User.name)
+        private userModel: Model<UserDocument>,
+        @InjectModel(Medicine.name)
+        private medicineModel: Model<MedicineDocument>,
+        @InjectModel(MedicalSupply.name)
+        private medicalSupplyModel: Model<MedicalSupplyDocument>
     ) { }
 
     async create(payload: CreateMedicalEventDto, user: IUser): Promise<MedicalEvent> {
@@ -20,6 +32,34 @@ export class MedicalEventsService {
         if (exists) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');
         }
+        const student = await this.studentModel.findOne({ _id: payload.studentId, isDeleted: false });
+        if (!student) {
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh không tồn tại');
+        }
+        const schoolNurse = await this.userModel.findOne({ _id: payload.schoolNurseId, isDeleted: false });
+        if (!schoolNurse) {
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Y tá không tồn tại');
+        }
+
+        // Kiểm tra medicinesId
+        if (payload.medicinesId && payload.medicinesId.length > 0) {
+            // Loại bỏ id undefined/null và check format id
+            const medicineIds = payload.medicinesId.filter(id => id && isValidObjectId(id));
+            const medicines = await this.medicineModel.find({ _id: { $in: medicineIds }, isDeleted: false });
+            if (medicines.length !== medicineIds.length) {
+                throw new CustomHttpException(HttpStatus.CONFLICT, 'Có thuốc không tồn tại');
+            }
+        }
+
+        // Kiểm tra medicalSuppliesId
+        if (payload.medicalSuppliesId && payload.medicalSuppliesId.length > 0) {
+            const medicalSupplyIds = payload.medicalSuppliesId.filter(id => id && isValidObjectId(id));
+            const supplies = await this.medicalSupplyModel.find({ _id: { $in: medicalSupplyIds }, isDeleted: false });
+            if (supplies.length !== medicalSupplyIds.length) {
+                throw new CustomHttpException(HttpStatus.CONFLICT, 'Có vật tư y tế không tồn tại');
+            }
+        }
+
         return this.medicalEventModel.create(payload);
     }
 
