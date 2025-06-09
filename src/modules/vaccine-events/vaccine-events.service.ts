@@ -143,7 +143,11 @@ export class VaccineEventServices {
     }
 
     async update(id: string, data: UpdateVaccineEventDTO): Promise<VaccineEvent> {
-        const updated = await this.vaccineEventModel.findOne({ id, isDeleted: false }, { $set: data }, { new: true });
+        const updated = await this.vaccineEventModel.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { $set: data },
+            { new: true }
+        );
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }

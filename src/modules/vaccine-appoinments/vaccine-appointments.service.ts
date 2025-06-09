@@ -35,7 +35,12 @@ export class VaccineAppoimentsService {
     }
 
     async update(id: string, data: UpdateVaccineAppointment): Promise<VaccineAppointment> {
-        const updated = await this.vaccineAppointmentModel.findOne({ id, isDeleted: false }, { $set: data }, { new: true });
+        const updated = await this.vaccineAppointmentModel.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { $set: data },
+            { new: true }
+        );
+
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }

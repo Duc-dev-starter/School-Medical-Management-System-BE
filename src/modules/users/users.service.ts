@@ -101,12 +101,19 @@ export class UsersService {
     return user;
   }
 
-  async updateUser(id: string, updateData: UpdateUserDTO): Promise<User> {
+  async updateUser(id: string, data: UpdateUserDTO): Promise<User> {
     if (!id) {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có userId');
     }
 
-    const updatedUser = await this.userModel.findOne({ _id: id, isDeleted: false })
+    const updatedUser = await this.userModel.findOneAndUpdate(
+      { _id: id, isDeleted: false },
+      { $set: data },
+      { new: true }
+    );
+
+    console.log(updatedUser)
+
 
     if (!updatedUser) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
