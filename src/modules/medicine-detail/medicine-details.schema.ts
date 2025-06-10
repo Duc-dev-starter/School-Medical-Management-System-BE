@@ -25,6 +25,12 @@ export class MedicineSubmissionDetail {
 
     @Prop({ required: true })
     endDate: Date;
+
+    @Prop()
+    note?: string;
+
+    @Prop()
+    reason?: string;
 }
 
 export const MedicineSubmissionDetailSchema = SchemaFactory.createForClass(MedicineSubmissionDetail);
