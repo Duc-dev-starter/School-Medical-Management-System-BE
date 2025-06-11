@@ -65,17 +65,20 @@ export class MedicalCheckEventsService {
             .lean();
         const classIds = classes.map(cls => cls._id);
 
-        // Lấy học sinh theo các classId đó
+        // Lấy học sinh theo các classId đó, populate toàn bộ parents.userId
         const students = await this.studentModel
             .find({ classId: { $in: classIds } })
-            .populate('parentId');
+            .populate('parents.userId')
+            .lean();
 
-        console.log('Xác nhận khám sức khỏe cho học sinh nè' + students)
+        // Gửi mail cho tất cả phụ huynh của từng học sinh
         for (const student of students) {
-            const parent = student.parentId as any;
-            if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
-                const subject = 'Xác nhận khám sức khỏe cho học sinh';
-                const html = `
+            if (Array.isArray(student.parents)) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId;
+                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                        const subject = 'Xác nhận khám sức khỏe cho học sinh';
+                        const html = `
          <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
            <h2 style="color:#388e3c;">Sự kiện tiêm vaccine: ${payload.eventName}</h2>
            <table style="width:100%;border-collapse:collapse;margin:16px 0;">
@@ -110,23 +113,29 @@ export class MedicalCheckEventsService {
            </p>
          </div>
        `;
-                const res = await this.mailQueue.add('send-vaccine-mail', {
-                    to: parent.email,
-                    subject,
-                    html,
-                });
-                console.log(res);
+                        await this.mailQueue.add('send-vaccine-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
+                    }
+                }
             }
         }
 
+        // Tạo medicalCheckRegistration cho từng phụ huynh-học sinh
         for (const student of students) {
-            const reg = new this.medicalCheckRegistrationModel({
-                parentId: student.parentId,
-                studentId: student._id,
-                eventId: savedEvent._id,
-                status: 'pending',
-            });
-            await reg.save();
+            if (Array.isArray(student.parents)) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId;
+                    await this.medicalCheckRegistrationModel.create({
+                        parentId: parent._id,
+                        studentId: student._id,
+                        eventId: savedEvent._id,
+                        status: 'pending',
+                    });
+                }
+            }
         }
 
         return savedEvent;

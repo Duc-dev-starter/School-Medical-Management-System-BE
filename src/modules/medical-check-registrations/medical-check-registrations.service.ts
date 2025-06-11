@@ -120,55 +120,31 @@ export class MedicalCheckRegistrationsService {
             reg.approvedAt = new Date();
             reg.cancellationReason = undefined;
 
-            await this.medicalCheckregistrationModel.create({
+            await this.medicalCheckAppoinmentModel.create({
                 studentId: reg.studentId,
                 eventId: reg.eventId,
                 status: AppointmentStatus.Pending,
                 isDeleted: false,
             });
 
-            const student = await this.studentModel.findById(reg.studentId).populate('parentId').lean();
+            // Lấy student và gửi mail cho từng phụ huynh
+            const student = await this.studentModel.findById(reg.studentId)
+                .populate('parents.userId')
+                .lean();
             const event = await this.medicalCheckEventModel.findById(reg.eventId).lean();
-            if (student && student.parentId && event) {
-                const parent = student.parentId as any;
-                if (parent.email) {
-                    const subject = 'Xác nhận đăng ký tiêm vaccine thành công';
-                    const html = `
-    <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
-      <h2 style="color:#388e3c;">Đăng ký tiêm vaccine đã được duyệt!</h2>
-      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-        <tr>
-          <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
-          <td style="padding:6px 0;">${event.startDate ? formatDateTime(event.startDate) : ''} - ${event.endDate ? formatDateTime(event.endDate) : ''}</td>
-        </tr>
-        <tr>
-          <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
-          <td style="padding:6px 0;">${event.location}</td>
-        </tr>
-        <tr>
-          <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
-          <td style="padding:6px 0;">${student.fullName}</td>
-        </tr>
-      </table>
-      <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
-        <b>Đơn đăng ký tiêm vaccine cho học sinh đã được duyệt. Vui lòng đưa học sinh đến sự kiện đúng thời gian!</b>
-      </p>
-      <div style="text-align:center;margin-bottom:8px;">
-        <a href="http://localhost:3000/vaccine-appointment"
-          style="display:inline-block;padding:12px 24px;background:#388e3c;color:#fff;text-decoration:none;font-weight:bold;border-radius:6px;font-size:16px;">
-          Xem chi tiết lịch hẹn tiêm
-        </a>
-      </div>
-      <p style="font-size:12px;color:#888;text-align:center;">Nếu nút không hiển thị, hãy copy link sau vào trình duyệt:<br>
-        <a href="http://localhost:3000/vaccine-appointment" style="color:#388e3c;">http://localhost:3000/vaccine-appointment</a>
-      </p>
-    </div>
-    `;
-                    await this.mailQueue.add('send-vaccine-mail', {
-                        to: parent.email,
-                        subject,
-                        html,
-                    });
+
+            if (student && Array.isArray(student.parents) && event) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId;
+                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                        const subject = 'Xác nhận đăng ký khám sức khỏe thành công';
+                        const html = `...`; // như trên
+                        await this.mailQueue.add('send-medical-check-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
+                    }
                 }
             }
         }

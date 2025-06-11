@@ -131,13 +131,18 @@ export class VaccineRegistrationsServices {
                 isDeleted: false,
             });
 
-            const student = await this.studentModel.findById(reg.studentId).populate('parentId').lean();
+            // SỬA Ở ĐÂY: lấy toàn bộ phụ huynh
+            const student = await this.studentModel.findById(reg.studentId)
+                .populate('parents.userId')
+                .lean();
             const event = await this.vaccineEventModel.findById(reg.eventId).lean();
-            if (student && student.parentId && event) {
-                const parent = student.parentId as any;
-                if (parent.email) {
-                    const subject = 'Xác nhận đăng ký tiêm vaccine thành công';
-                    const html = `
+
+            if (student && Array.isArray(student.parents) && event) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId;
+                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                        const subject = 'Xác nhận đăng ký tiêm vaccine thành công';
+                        const html = `
 <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
   <h2 style="color:#388e3c;">Đăng ký tiêm vaccine đã được duyệt!</h2>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;">
@@ -172,11 +177,12 @@ export class VaccineRegistrationsServices {
   </p>
 </div>
 `;
-                    await this.mailQueue.add('send-vaccine-mail', {
-                        to: parent.email,
-                        subject,
-                        html,
-                    });
+                        await this.mailQueue.add('send-vaccine-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
+                    }
                 }
             }
         }

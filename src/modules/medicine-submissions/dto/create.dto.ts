@@ -40,6 +40,17 @@ export class MedicineSubmissionDetailDTO {
     @ApiProperty({ description: 'Ngày kết thúc', example: '2025-06-10' })
     @IsDateString()
     endDate: string;
+
+    @ApiProperty({ description: 'Ghi chú', example: 'Uống sau ăn' })
+    @IsString()
+    @IsOptional()
+    note?: string;
+
+
+    @ApiProperty({ description: 'Lý do', example: 'Uống sau ăn' })
+    @IsString()
+    @IsOptional()
+    reason?: string;
 }
 
 export class CreateMedicineSubmissionDTO {

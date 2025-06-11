@@ -23,7 +23,7 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Dữ liệu đang trống');
     }
 
-    const { fullName, email, password, phone, role, studentCodes = [] } = payload;
+    const { fullName, email, password, phone, role, studentParents = [] } = payload;
 
     const existingUser = await this.userModel.findOne({ email, isDeleted: false });
     if (existingUser) {
@@ -51,35 +51,32 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, error.message);
     }
 
-    if (role === 'parent' && studentCodes.length > 0) {
-      const students = await this.studentModel.find({
-        studentCode: { $in: studentCodes },
-        isDeleted: false,
-      });
-
-      if (students.length !== studentCodes.length) {
-        throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Một số mã học sinh không hợp lệ');
+    if (role === 'parent' && studentParents.length > 0) {
+      for (const { studentCode, type } of studentParents) {
+        const student = await this.studentModel.findOne({ studentCode, isDeleted: false });
+        if (!student) {
+          throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Mã học sinh ${studentCode} không tồn tại`);
+        }
+        // Kiểm tra đã đủ 2 phụ huynh chưa
+        if (student.parents.length >= 2) {
+          throw new CustomHttpException(HttpStatus.CONFLICT, `Học sinh ${student.fullName} đã đủ phụ huynh`);
+        }
+        // Kiểm tra trùng type chưa
+        if (student.parents.some((p) => p.type === type)) {
+          throw new CustomHttpException(HttpStatus.CONFLICT, `Học sinh ${student.fullName} đã có liên kết với ${type === 'father' ? 'ba' : type === 'mother' ? 'mẹ' : 'giám hộ'}`);
+        }
+        // Thêm phụ huynh vào students
+        student.parents.push({ userId: newUser._id, type });
+        await student.save();
       }
-
-      const alreadyLinked = students.filter((s) => s.parentId);
-      if (alreadyLinked.length > 0) {
-        throw new CustomHttpException(
-          HttpStatus.CONFLICT,
-          `Học sinh ${alreadyLinked.map((s) => s.fullName).join(', ')} đã có phụ huynh liên kết`
-        );
-      }
-
-      const studentIds = students.map((s) => s._id);
-
-      await this.studentModel.updateMany(
-        { _id: { $in: studentIds } },
-        { parentId: newUser._id }
-      );
-
+      // Cập nhật user.studentIds
+      const studentIds = studentParents.map((sp) => sp.studentCode);
+      const students = await this.studentModel.find({ studentCode: { $in: studentIds } });
       await this.userModel.findByIdAndUpdate(newUser._id, {
-        $addToSet: { studentIds: { $each: studentIds } }
+        $addToSet: { studentIds: { $each: students.map((s) => s._id) } }
       });
     }
+
 
     const { password: _password, ...userObj } = newUser.toObject();
     return userObj as UserWithoutPassword;
@@ -178,11 +175,18 @@ export class UsersService {
     return true;
   }
 
-  async linkStudents(user: IUser, studentCodes: string[]) {
+  async linkStudents(
+    user: IUser,
+    studentParents: { studentCode: string; type: 'father' | 'mother' | 'guardian' }[]
+  ) {
     if (user.role !== 'parent') {
       throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Chỉ phụ huynh mới có thể liên kết học sinh');
     }
 
+    // Lấy tất cả mã học sinh
+    const studentCodes = studentParents.map((sp) => sp.studentCode);
+
+    // Lấy thông tin học sinh
     const students = await this.studentModel.find({
       studentCode: { $in: studentCodes },
       isDeleted: false,
@@ -192,21 +196,42 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Một số mã học sinh không hợp lệ');
     }
 
-    const alreadyLinked = students.filter((s) => s.parentId);
-    if (alreadyLinked.length > 0) {
-      throw new CustomHttpException(
-        HttpStatus.CONFLICT,
-        `Học sinh ${alreadyLinked.map((s) => s.fullName).join(', ')} đã được liên kết`
+    // Kiểm tra từng học sinh chưa đủ 2 phụ huynh và chưa trùng type
+    for (const { studentCode, type } of studentParents) {
+      const student = students.find((s) => s.studentCode === studentCode);
+      if (!student) continue;
+      if (!student.parents) student.parents = [];
+      if (student.parents.length >= 2) {
+        throw new CustomHttpException(
+          HttpStatus.CONFLICT,
+          `Học sinh ${student.fullName} đã đủ số lượng phụ huynh`
+        );
+      }
+      if (student.parents.some((p) => p.type === type)) {
+        throw new CustomHttpException(
+          HttpStatus.CONFLICT,
+          `Học sinh ${student.fullName} đã có phụ huynh loại "${type}"`
+        );
+      }
+      // Đã liên kết rồi thì không cho liên kết lại
+      if (student.parents.some((p) => p.userId?.toString() === user._id.toString())) {
+        throw new CustomHttpException(
+          HttpStatus.CONFLICT,
+          `Bạn đã được liên kết với học sinh ${student.fullName}`
+        );
+      }
+    }
+
+    // Cập nhật lại mảng parents cho từng học sinh
+    for (const { studentCode, type } of studentParents) {
+      await this.studentModel.updateOne(
+        { studentCode },
+        { $push: { parents: { userId: user._id, type } } }
       );
     }
 
+    // Cập nhật lại studentIds trong user
     const studentIds = students.map((s) => s._id);
-
-    await this.studentModel.updateMany(
-      { _id: { $in: studentIds } },
-      { parentId: user._id }
-    );
-
     await this.userModel.findByIdAndUpdate(user._id, {
       $addToSet: { studentIds: { $each: studentIds } }
     });
@@ -214,6 +239,7 @@ export class UsersService {
     return students.map(s => ({
       fullName: s.fullName,
       studentCode: s.studentCode,
+      parents: s.parents,
     }));
   }
 

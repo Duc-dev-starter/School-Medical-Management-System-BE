@@ -133,7 +133,7 @@ export class UsersController {
   @ApiBody({ type: LinkStudentsDTO })
   @ApiResponse({ status: 200, description: 'Liên kết thành công', type: [Student] })
   async linkStudents(@Req() req, @Body() body: LinkStudentsDTO) {
-    const result = await this.usersService.linkStudents(req.user, body.studentCodes);
+    const result = await this.usersService.linkStudents(req.user, body.studentParents);
     return formatResponse(result);
   }
 

@@ -68,15 +68,19 @@ export class VaccineEventServices {
         const classIds = classes.map(cls => cls._id);
 
         // Lấy học sinh theo các classId đó
+        // Lấy học sinh theo các classId đó, populate toàn bộ parents.userId
         const students = await this.studentModel
             .find({ classId: { $in: classIds } })
-            .populate('parentId');
+            .populate('parents.userId')
+            .lean();
 
         for (const student of students) {
-            const parent = student.parentId as any;
-            if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
-                const subject = 'Xác nhận tiêm vaccine cho học sinh';
-                const html = `
+            if (Array.isArray(student.parents)) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId;
+                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                        const subject = 'Xác nhận tiêm vaccine cho học sinh';
+                        const html = `
   <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
     <h2 style="color:#388e3c;">Sự kiện tiêm vaccine: ${payload.title}</h2>
     <table style="width:100%;border-collapse:collapse;margin:16px 0;">
@@ -111,25 +115,25 @@ export class VaccineEventServices {
     </p>
   </div>
 `;
-                const res = await this.mailQueue.add('send-vaccine-mail', {
-                    to: parent.email,
-                    subject,
-                    html,
-                });
-                console.log(res);
+
+                        // Gửi mail
+                        await this.mailQueue.add('send-vaccine-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
+
+                        // Tạo vaccineRegistration
+                        await this.vaccineRegistrationModel.create({
+                            parentId: parent._id,
+                            studentId: student._id,
+                            eventId: savedEvent._id,
+                            status: 'pending',
+                        });
+                    }
+                }
             }
         }
-
-        for (const student of students) {
-            const reg = new this.vaccineRegistrationModel({
-                parentId: student.parentId,
-                studentId: student._id,
-                eventId: savedEvent._id,
-                status: 'pending',
-            });
-            await reg.save();
-        }
-
         return savedEvent;
     }
 
