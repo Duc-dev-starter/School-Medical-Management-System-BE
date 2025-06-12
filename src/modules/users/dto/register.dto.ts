@@ -39,12 +39,6 @@ export class RegisterDTO {
   @IsNotEmpty()
   role: Role;
 
-
-  @ApiProperty({ description: 'Mã học sinh' })
-  @IsOptional()
-  @IsArray()
-  studentCodes?: string[];
-
   @ApiProperty({ default: false, description: 'Trạng thái xóa người dùng' })
   @IsOptional()
   isDeleted?: boolean;

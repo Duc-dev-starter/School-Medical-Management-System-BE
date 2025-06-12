@@ -31,6 +31,7 @@ import { MedicalCheckRegistrationsModule } from './modules/medical-check-registr
 import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointments/medical-check-appointments.module';
 import { BullModule } from '@nestjs/bull';
 import { MailModule } from './common/modules/mail.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 
 
 
@@ -55,6 +56,7 @@ import { MailModule } from './common/modules/mail.module';
     MedicalCheckEventsModule,
     MedicalCheckRegistrationsModule,
     MedicalCheckAppointmentsModule,
+    AppointmentsModule,
     MailModule,
     CacheModule.registerAsync(redisCacheConfig()),
 
