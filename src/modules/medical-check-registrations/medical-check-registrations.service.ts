@@ -57,6 +57,7 @@ export class MedicalCheckRegistrationsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .setOptions({ strictPopulate: false })
             .sort({ createdAt: -1 })
             .populate('parent')
             .populate('student')
@@ -70,6 +71,7 @@ export class MedicalCheckRegistrationsService {
     async findOne(id: string): Promise<MedicalCheckRegistration> {
         const item = await this.medicalCheckregistrationModel
             .findById(id, { isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate('parent')
             .populate('student')
             .populate('event');

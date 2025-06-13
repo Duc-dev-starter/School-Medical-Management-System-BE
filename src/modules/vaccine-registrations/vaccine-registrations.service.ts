@@ -45,6 +45,7 @@ export class VaccineRegistrationsServices {
     async findOne(id: string): Promise<VaccineRegistration> {
         const item = await this.vaccineRegistrationModel
             .findById(id, { isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate('parent')
             .populate('student')
             .populate('event');
@@ -84,6 +85,7 @@ export class VaccineRegistrationsServices {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .setOptions({ strictPopulate: false })
             .sort({ createdAt: -1 })
             .populate('parent')
             .populate('student')

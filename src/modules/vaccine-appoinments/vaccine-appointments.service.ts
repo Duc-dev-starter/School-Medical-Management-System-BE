@@ -25,6 +25,7 @@ export class VaccineAppoimentsService {
     async findOne(id: string): Promise<VaccineAppointment> {
         const item = await this.vaccineAppointmentModel
             .findById(id, { isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate('checkedBy')
             .populate('student')
             .populate('event');
@@ -61,6 +62,7 @@ export class VaccineAppoimentsService {
         const items = await this.vaccineAppointmentModel
             .find(filters)
             .skip((pageNum - 1) * pageSize)
+            .setOptions({ strictPopulate: false })
             .limit(pageSize)
             .sort({ createdAt: -1 })
             .populate('checkedBy')

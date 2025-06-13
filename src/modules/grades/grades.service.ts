@@ -22,6 +22,7 @@ export class GradesService {
     async findOne(id: string): Promise<any> {
         const grade = await this.gradeModel
             .findOne({ _id: id, isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate({
                 path: 'classes',
                 select: '_id name isDeleted studentIds',
@@ -72,6 +73,7 @@ export class GradesService {
         const items = await this.gradeModel
             .find(filters)
             .skip((pageNum - 1) * pageSize)
+            .setOptions({ strictPopulate: false })
             .limit(pageSize)
             .populate({
                 path: 'classes',

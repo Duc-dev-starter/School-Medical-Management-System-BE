@@ -77,6 +77,7 @@ export class MedicalEventsService {
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
             .sort({ createdAt: -1 })
+            .setOptions({ strictPopulate: false })
             .populate('student')
             .populate('schoolNurse')
             .populate('medicines')
@@ -90,6 +91,7 @@ export class MedicalEventsService {
     async findOne(id: string): Promise<MedicalEvent> {
         const item = await this.medicalEventModel
             .findById(id, { isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate('student')
             .populate('schoolNurse')
             .populate('medicines')

@@ -43,6 +43,7 @@ export class StudentsService {
     async findOne(id: string): Promise<any> {
         const item = await this.studentModel
             .findOne({ _id: id, isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate([
                 {
                     path: 'parents.userId',
@@ -121,6 +122,7 @@ export class StudentsService {
             .find(filters)
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
+            .setOptions({ strictPopulate: false })
             .populate({
                 path: 'classId',
                 select: 'name gradeId'

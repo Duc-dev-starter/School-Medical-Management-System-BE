@@ -35,6 +35,7 @@ export class MedicalCheckAppointmentsService {
         const totalItems = await this.medicalCheckAppointmentmodel.countDocuments(filters);
         const results = await this.medicalCheckAppointmentmodel
             .find(filters)
+            .setOptions({ strictPopulate: false })
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
             .sort({ createdAt: -1 })
@@ -50,6 +51,7 @@ export class MedicalCheckAppointmentsService {
     async findOne(id: string): Promise<MedicalCheckAppointment> {
         const item = await this.medicalCheckAppointmentmodel
             .findById(id, { isDeleted: false })
+            .setOptions({ strictPopulate: false })
             .populate('checkedBy')
             .populate('student')
             .populate('event');
