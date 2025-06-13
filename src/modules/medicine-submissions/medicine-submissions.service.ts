@@ -90,7 +90,24 @@ export class MedicineSubmissionsService {
         }
 
         // Tìm user theo ID
-        const medicineSubmission = await this.medicineSubmissionModel.findById(id).exec();
+        const medicineSubmission = await this.medicineSubmissionModel
+            .findById(id)
+            .populate([
+                {
+                    path: 'parentId',
+                    select: 'fullName email phone role',
+                },
+                {
+                    path: 'schoolNurseId',
+                    select: 'fullName email phone role',
+                },
+                {
+                    path: 'studentId',
+                    select: 'fullName gender dob studentCode',
+                }
+            ])
+            .lean();
+
 
         if (!medicineSubmission) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn thuốc');

@@ -6,6 +6,7 @@ export type StudentDocument = HydratedDocument<Student>;
 
 export type ParentType = 'father' | 'mother' | 'guardian';
 
+@Schema({ _id: false })
 export class ParentInfo {
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
     userId: Types.ObjectId;
@@ -13,6 +14,8 @@ export class ParentInfo {
     @Prop({ required: true, enum: ['father', 'mother', 'guardian'] })
     type: ParentType;
 }
+
+export const ParentInfoSchema = SchemaFactory.createForClass(ParentInfo);
 
 @Schema({ timestamps: true })
 export class Student {
@@ -28,8 +31,9 @@ export class Student {
     @Prop({ required: true })
     dob: Date;
 
-    @Prop({ type: [ParentInfo], default: [] })
-    parents: ParentInfo[]; // <-- Thay cho parentId
+    @Prop({ type: [ParentInfoSchema], default: [] })
+    parents: ParentInfo[];
+
 
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.CLASS, required: true })
     classId: string;

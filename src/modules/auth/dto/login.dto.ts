@@ -5,6 +5,7 @@ export class LoginDTO {
   @ApiProperty({
     description: 'The email of the user',
     type: String,
+    example: 'admin@gmail.com'
   })
   @IsNotEmpty()
   email: string;
@@ -12,6 +13,7 @@ export class LoginDTO {
   @ApiProperty({
     description: 'The password of the user',
     type: String,
+    example: '123456'
   })
   @IsNotEmpty()
   password: string;

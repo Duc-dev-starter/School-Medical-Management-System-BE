@@ -45,13 +45,13 @@ export class StudentsService {
             .findOne({ _id: id, isDeleted: false })
             .populate([
                 {
-                    path: 'class',
-                    select: 'name positionOrder isDeleted',
-                },
-                {
-                    path: 'parent',
+                    path: 'parents.userId',
                     select: 'fullName phone email isDeleted role',
                 },
+                {
+                    path: 'classId',
+                    select: 'name positionOrder isDeleted',
+                }
             ])
             .lean()
             .exec() as any;
@@ -60,38 +60,35 @@ export class StudentsService {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
 
+        // Map parentInfos dạng phẳng
+        item.parentInfos = (item.parents || []).map((p: any) => ({
+            type: p.type,
+            _id: p.userId?._id || p.userId, // nếu populate thành công sẽ là object
+            fullName: p.userId?.fullName || '',
+            phone: p.userId?.phone || '',
+            email: p.userId?.email || '',
+            role: p.userId?.role || '',
+        }));
+
+        // Map classInfo nếu muốn
         if (item.classId && typeof item.classId === 'object') {
+            item.classInfo = {
+                _id: item.classId._id,
+                name: item.classId.name,
+                positionOrder: item.classId.positionOrder,
+                isDeleted: item.classId.isDeleted,
+            };
             item.classId = item.classId._id?.toString() || item.classId.id || '';
         }
-        if (item.parentId && typeof item.parentId === 'object') {
-            item.parentId = item.parentId._id?.toString() || item.parentId.id || '';
-        }
 
-        if (item.classInfo) {
-            item.classInfo = {
-                _id: item.classInfo._id,
-                name: item.classInfo.name,
-                positionOrder: item.classInfo.positionOrder,
-                isDeleted: item.classInfo.isDeleted,
-            };
-        }
-
-        if (item.parentInfo) {
-            item.parentInfo = {
-                _id: item.parentInfo._id,
-                fullName: item.parentInfo.fullName,
-                phone: item.parentInfo.phone,
-                email: item.parentInfo.email,
-            };
-        }
-
+        // Xoá trường không cần thiết
+        delete item.parents;
         delete item.createdAt;
         delete item.updatedAt;
         delete item.__v;
 
         return item;
     }
-
 
     async update(id: string, data: UpdateStudentDTO): Promise<Student> {
         const updated = await this.studentModel
