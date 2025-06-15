@@ -7,18 +7,20 @@ import {
     Patch,
     Req,
     UseGuards,
+    Query,
 } from '@nestjs/common';
 import {
     ApiBearerAuth,
     ApiBody,
     ApiOperation,
     ApiParam,
+    ApiQuery,
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
 import { formatResponse } from 'src/utils';
 import { AppointmentService } from './appointments.service';
-import { CreateParentNurseAppointmentDTO, UpdateParentNurseAppointmentStatusDTO } from './dto';
+import { CreateParentNurseAppointmentDTO, SearchAppointmentDTO, UpdateParentNurseAppointmentStatusDTO } from './dto';
 import { ParentNurseAppointment } from './appointments.schema';
 
 @ApiBearerAuth()
@@ -50,5 +52,27 @@ export class AppointmentsController {
         return formatResponse(appointment);
     }
 
-    // Có thể bổ sung các API lấy danh sách, chi tiết, ... nếu cần
+    @Get('search/:pageNum/:pageSize')
+    @ApiOperation({ summary: 'Tìm kiếm lịch hẹn có phân trang & lọc' })
+    @ApiParam({ name: 'pageNum', example: 1 })
+    @ApiParam({ name: 'pageSize', example: 10 })
+    @ApiQuery({ name: 'query', required: false })
+    @ApiQuery({ name: 'parentId', required: false })
+    @ApiQuery({ name: 'studentId', required: false })
+    @ApiQuery({ name: 'nurseId', required: false })
+    @ApiQuery({ name: 'managerId', required: false })
+    @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ name: 'type', required: false })
+    async search(
+        @Param('pageNum') pageNum: number,
+        @Param('pageSize') pageSize: number,
+        @Query() query: Omit<SearchAppointmentDTO, 'pageNum' | 'pageSize'>
+    ) {
+        const params: SearchAppointmentDTO = {
+            ...query,
+            pageNum: Number(pageNum),
+            pageSize: Number(pageSize),
+        };
+        return await this.appointmentsService.search(params);
+    }
 }

@@ -3,7 +3,8 @@ import { InjectModel } from "@nestjs/mongoose";
 import { ParentNurseAppointment } from "./appointments.schema";
 import { Model } from "mongoose";
 import { IUser } from "../users/users.interface";
-import { CreateParentNurseAppointmentDTO } from "./dto";
+import { CreateParentNurseAppointmentDTO, SearchAppointmentDTO } from "./dto";
+import { PaginationResponseModel, SearchPaginationResponseModel } from "src/common/models";
 
 @Injectable()
 export class AppointmentService {
@@ -26,5 +27,32 @@ export class AppointmentService {
             managerId: manager._id,
             status: 'approved'
         }, { new: true });
+    }
+
+    async search(params: SearchAppointmentDTO) {
+        const { pageNum, pageSize, query, parentId, studentId, nurseId, managerId, status, type } = params;
+        const filters: any = {};
+
+        if (query?.trim()) {
+            filters.reason = { $regex: query, $options: 'i' };
+        }
+        if (parentId) filters.parentId = parentId;
+        if (studentId) filters.studentId = studentId;
+        if (nurseId) filters.nurseId = nurseId;
+        if (managerId) filters.managerId = managerId;
+        if (status) filters.status = status;
+        if (type) filters.type = type;
+
+        const totalItems = await this.appointmentModel.countDocuments(filters);
+        const items = await this.appointmentModel
+            .find(filters)
+            .skip((pageNum - 1) * pageSize)
+            .limit(pageSize)
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Trả về dạng phân trang bạn đang dùng
+        const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
+        return new SearchPaginationResponseModel(items, pageInfo);
     }
 }
