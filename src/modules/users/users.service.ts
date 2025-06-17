@@ -245,17 +245,11 @@ export class UsersService {
 
   async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<boolean> {
     const user = await this.userModel.findOne({ _id: userId, isDeleted: false });
-    if (!user) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
-    }
-
+    if (!user) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy user');
     const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Mật khẩu cũ không chính xác');
-    }
+    if (!isMatch) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Mật khẩu cũ không chính xác');
 
-    const hash = await bcrypt.hash(newPassword, 10);
-    user.password = hash;
+    user.password = newPassword;
     await user.save();
     return true;
   }
