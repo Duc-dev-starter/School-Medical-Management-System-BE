@@ -61,11 +61,10 @@ export class MedicineSubmissionsService {
         if (!nurse) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Phụ huynh không tồn tại');
         }
-
         const newMedicineSubmission = new this.medicineSubmissionModel({
-            parentId: user._id,
-            studentId: payload.studentId,
-            schoolNurseId: payload.schoolNurseId,
+            parentId: new Types.ObjectId(payload.parentId),
+            studentId: new Types.ObjectId(payload.studentId),
+            schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
             medicines: payload.medicines.map((med) => ({
                 ...med,
                 startDate: new Date(med.startDate),
@@ -146,8 +145,9 @@ export class MedicineSubmissionsService {
 
 
 
+
     async search(params: SearchMedicineSubmissionDTO) {
-        const { pageNum, pageSize, query, parentId, status, studentId } = params;
+        const { pageNum, pageSize, query, parentId, status, studentId, schoolNurseId } = params;
         const filters: any = { isDeleted: false };
 
         if (query?.trim()) {
@@ -157,11 +157,15 @@ export class MedicineSubmissionsService {
         }
 
         if (studentId?.trim()) {
-            filters.studentId = studentId;
+            filters.studentId = new Types.ObjectId(studentId);
+        }
+
+        if (schoolNurseId?.trim()) {
+            filters.schoolNurseId = new Types.ObjectId(schoolNurseId);
         }
 
         if (parentId?.trim()) {
-            filters.parentId = parentId;
+            filters.parentId = new Types.ObjectId(parentId);
         }
 
         if (status?.trim()) {
@@ -169,7 +173,6 @@ export class MedicineSubmissionsService {
         }
 
         const totalItems = await this.medicineSubmissionModel.countDocuments(filters);
-        console.log(totalItems);
         const medicineSubmissions = await this.medicineSubmissionModel
             .find(filters)
             .skip((pageNum - 1) * pageSize)
@@ -185,7 +188,6 @@ export class MedicineSubmissionsService {
 
         return new SearchPaginationResponseModel(medicineSubmissions, pageInfo);
     }
-
 
     async remove(id: string, user: IUser): Promise<boolean> {
         const medicineSubmission = await this.medicineSubmissionModel.findOne({ _id: id, isDeleted: false });

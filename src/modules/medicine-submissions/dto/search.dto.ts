@@ -15,6 +15,11 @@ export class SearchMedicineSubmissionDTO extends PaginationRequestModel {
 
     @ApiPropertyOptional()
     @IsOptional()
+    @IsMongoId()
+    schoolNurseId?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
     @IsString()
     status?: string;
 
