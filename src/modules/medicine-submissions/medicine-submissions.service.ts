@@ -6,7 +6,7 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { IUser } from '../users/users.interface';
 import { MedicineSubmission, MedicineSubmissionDocument } from './medicine-submissions.schema';
-import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO } from './dto';
+import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
 import { HealthRecordsService } from '../health-records/health-records.service';
 import { MedicineSubmissionDetailDTO } from './dto/create.dto';
 import { User, UserDocument } from '../users/users.schema';
@@ -199,6 +199,41 @@ export class MedicineSubmissionsService {
 
         await this.medicineSubmissionModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+    async updateStatus(id: string, dto: UpdateMedicineSubmissionStatusDTO, user: IUser) {
+        const submission = await this.medicineSubmissionModel.findOne({ _id: id, isDeleted: false });
+        if (!submission) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn thuốc');
+        }
+
+        // Chỉ cho phép chuyển trạng thái khi đang pending
+        if (submission.status !== 'pending') {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ cập nhật trạng thái khi đơn đang ở trạng thái pending');
+        }
+
+        if (dto.status === 'pending') {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không thể chuyển trạng thái về pending');
+        }
+
+        // Nếu từ chối thì phải có lý do
+        if (dto.status === 'rejected' && !dto.cancellationReason) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phải có lý do khi từ chối đơn thuốc');
+        }
+
+        submission.status = dto.status;
+        if (dto.status === 'rejected') {
+            (submission as any).cancellationReason = dto.cancellationReason;
+        } else if ('cancellationReason' in submission) {
+            // Xóa lý do khi không còn rejected
+            (submission as any).cancellationReason = undefined;
+        }
+        if (dto.status === 'approved') {
+            (submission as any).approvedAt = new Date();
+        }
+
+        await submission.save();
+        return submission;
     }
 
 }

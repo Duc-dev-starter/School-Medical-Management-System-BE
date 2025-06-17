@@ -5,6 +5,7 @@ import {
     Get,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -16,7 +17,7 @@ import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
 import { MedicineSubmissionsService } from './medicine-submissions.service';
-import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO } from './dto';
+import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
 import { MedicineSubmission } from './medicine-submissions.schema';
 
 @ApiTags('Medicine Submissions')
@@ -75,5 +76,17 @@ export class MedicineSubmissionsController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.medicineSubmissionService.remove(id, req.user);
         return formatResponse<boolean>(result);
+    }
+
+    @Patch(':id/status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cập nhật trạng thái đơn thuốc' })
+    @ApiResponse({ status: 200, description: 'Thay đổi thành công' })
+    async updateStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateMedicineSubmissionStatusDTO,
+        @Req() req
+    ) {
+        return this.medicineSubmissionService.updateStatus(id, dto, req.user);
     }
 }
