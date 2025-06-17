@@ -12,6 +12,7 @@ import { GradesModule } from '../grades/grades.module';
 import { Student, StudentSchema } from '../students/students.schema';
 import { User, UserSchema } from '../users/users.schema';
 import { VaccineEvent, VaccineEventSchema } from '../vaccine-events/vaccine-events.schema';
+import { VaccineRegistrationCronService } from './vaccine-registrations-cron.service';
 
 @Module({
     imports: [
@@ -31,7 +32,7 @@ import { VaccineEvent, VaccineEventSchema } from '../vaccine-events/vaccine-even
         VaccineRegistrationsModule
     ],
     controllers: [VaccineRegistrationsController],
-    providers: [VaccineRegistrationsServices],
+    providers: [VaccineRegistrationsServices, VaccineRegistrationCronService],
     exports: [VaccineRegistrationsServices],
 })
 export class VaccineRegistrationsModule { }
