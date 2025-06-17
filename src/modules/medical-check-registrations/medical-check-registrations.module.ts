@@ -13,14 +13,16 @@ import { StudentsModule } from '../students/students.module';
 import { MailModule } from 'src/common/modules/mail.module';
 import { GradesModule } from '../grades/grades.module';
 import { MedicalCheckAppointmentsModule } from '../medical-check-appointments/medical-check-appointments.module';
+import { MedicalCheckRegistrationCronService } from './medical-check-registrations-cron.service';
 
 @Module({
     imports: [
-        MongooseModule.forFeature([{ name: MedicalCheckRegistration.name, schema: MedicalCheckRegistrationSchema },
-        { name: Student.name, schema: StudentSchema },
-        { name: User.name, schema: UserSchema },
-        { name: MedicalCheckEvent.name, schema: MedicalCheckEventSchema },
-        { name: MedicalCheckAppointment.name, schema: MedicalCheckAppointmentSchema },
+        MongooseModule.forFeature([
+            { name: MedicalCheckRegistration.name, schema: MedicalCheckRegistrationSchema },
+            { name: Student.name, schema: StudentSchema },
+            { name: User.name, schema: UserSchema },
+            { name: MedicalCheckEvent.name, schema: MedicalCheckEventSchema },
+            { name: MedicalCheckAppointment.name, schema: MedicalCheckAppointmentSchema },
         ]),
         BullModule.registerQueue({
             name: 'mailQueue',
@@ -32,7 +34,10 @@ import { MedicalCheckAppointmentsModule } from '../medical-check-appointments/me
         MedicalCheckAppointmentsModule
     ],
     controllers: [MedicalCheckRegistrationsController],
-    providers: [MedicalCheckRegistrationsService],
+    providers: [
+        MedicalCheckRegistrationsService,
+        MedicalCheckRegistrationCronService
+    ],
     exports: [MedicalCheckRegistrationsService],
 })
 export class MedicalCheckRegistrationsModule { }

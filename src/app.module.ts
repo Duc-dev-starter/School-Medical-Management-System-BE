@@ -32,6 +32,7 @@ import { MedicalCheckAppointmentsModule } from './modules/medical-check-appointm
 import { BullModule } from '@nestjs/bull';
 import { MailModule } from './common/modules/mail.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 
 
@@ -59,6 +60,8 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
     AppointmentsModule,
     MailModule,
     CacheModule.registerAsync(redisCacheConfig()),
+
+    ScheduleModule.forRoot(),
 
     ConfigModule.forRoot({
       isGlobal: true,

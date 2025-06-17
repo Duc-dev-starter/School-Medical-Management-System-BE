@@ -31,4 +31,9 @@ export class CreateMedicalCheckEventDTO {
     @IsNotEmpty()
     @IsDateString()
     endDate: Date;
+
+    @ApiProperty({ description: 'Thời gian bắt đầu sự kiện', example: '2025-09-01T08:00:00.000Z' })
+    @IsNotEmpty()
+    @IsDateString()
+    eventDate: Date;
 }

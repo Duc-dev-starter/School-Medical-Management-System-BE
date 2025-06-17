@@ -22,6 +22,9 @@ export class MedicalCheckEvent {
 
     @Prop({ required: true })
     endDate: Date;
+
+    @Prop({ required: true })
+    eventDate: Date;
 }
 
 export const MedicalCheckEventSchema = SchemaFactory.createForClass(MedicalCheckEvent);
