@@ -25,12 +25,22 @@ export class MedicalCheckAppointmentsService {
     }
 
     async findAll(params: SearchMedicalCheckAppointmentDTO) {
-        const { pageNum, pageSize, query } = params;
+        const { pageNum, pageSize, query, checkedBy, eventId, schoolYear, studentId } = params;
         const filters: any = {};
 
         if (query?.trim()) {
             filters.eventName = { $regex: query, $options: 'i' };
         }
+
+        if (schoolYear?.trim()) {
+            filters.schoolYear = schoolYear.trim();
+        }
+
+        if (checkedBy?.trim()) filters.userId = checkedBy.trim();
+
+        if (studentId?.trim()) filters.studentId = studentId.trim();
+
+        if (eventId?.trim()) filters.eventId = eventId.trim();
 
         const totalItems = await this.medicalCheckAppointmentmodel.countDocuments(filters);
         const results = await this.medicalCheckAppointmentmodel

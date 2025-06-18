@@ -41,6 +41,7 @@ export class VaccineAppoimentsController {
     @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
     @ApiQuery({ name: 'eventId', required: false, description: 'ID của sự kiện' })
+    @ApiQuery({ name: 'studentId', required: false, description: 'ID học sinh' })
     @ApiResponse({ status: 200 })
     @Public()
     async findAll(@Query() query: SearchVaccineAppointmentDTO) {

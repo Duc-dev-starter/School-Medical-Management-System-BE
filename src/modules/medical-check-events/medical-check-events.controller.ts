@@ -42,7 +42,7 @@ export class MedicalCheckEventsController {
     @ApiQuery({ name: 'pageSize', required: false, example: 10, description: 'Số lượng bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false })
     @ApiQuery({ name: 'categoryId', required: false })
-    @ApiQuery({ name: 'userId', required: false })
+    @ApiQuery({ name: 'studentId', required: false, description: 'ID học sinh' })
     @Public()
     async findAll(@Query() query: SearchMedicalCheckEventDTO) {
         return this.medicalCheckEventsService.findAll(query);

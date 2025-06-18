@@ -48,7 +48,10 @@ export class MedicalCheckAppoimentsController {
     @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
     @ApiParam({ name: 'pageSize', example: 10, description: 'Số bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (tên, email, số điện thoại)' })
-    @ApiQuery({ name: 'userId', required: false, description: 'ID của người dùng' })
+    @ApiQuery({ name: 'checkedBy', required: false, description: 'ID người kiểm tra' })
+    @ApiQuery({ name: 'eventId', required: false, description: 'ID sự kiện' })
+    @ApiQuery({ name: 'schoolYear', required: false, description: 'Năm học' })
+    @ApiQuery({ name: 'studentId', required: false, description: 'ID học sinh' })
     @ApiResponse({ status: 200 })
     async findAll(@Query() query: SearchMedicalCheckAppointmentDTO) {
         const result = await this.medicalCheckAppoimentService.findAll(query);

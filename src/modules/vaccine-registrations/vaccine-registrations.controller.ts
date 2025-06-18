@@ -38,6 +38,10 @@ export class VaccineRegistrationsController {
     @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
     @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
+    @ApiQuery({ name: 'studentId', required: false, description: 'ID học sinh' })
+    @ApiQuery({ name: 'eventId', required: false, description: 'ID của sự kiện' })
+    @ApiQuery({ name: 'parentId', required: false, description: 'ID phu huyn' })
+
     @ApiResponse({ status: 200 })
     @Public()
     async findAll(@Query() query: SearchVaccineRegistrationDTO) {

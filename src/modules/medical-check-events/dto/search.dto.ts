@@ -12,4 +12,13 @@ export class SearchMedicalCheckEventDTO extends PaginationRequestModel {
     @IsString()
     @ApiProperty({ description: 'Tìm theo ID người dùng', required: false })
     studentId?: string;
+
+    @IsOptional()
+    @IsString()
+    @ApiProperty({
+        description: 'Năm học (school year), ví dụ: 2024-2025',
+        required: false,
+        example: '2024-2025'
+    })
+    schoolYear?: string;
 }
