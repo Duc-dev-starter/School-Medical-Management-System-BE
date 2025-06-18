@@ -102,7 +102,11 @@ export class MedicineSubmissionsService {
                 },
                 {
                     path: 'studentId',
-                    select: 'fullName gender dob studentCode',
+                    select: 'fullName gender dob studentCode classId',
+                    populate: {
+                        path: 'class',
+                        select: 'name  schoolYear',
+                    }
                 }
             ])
             .lean();

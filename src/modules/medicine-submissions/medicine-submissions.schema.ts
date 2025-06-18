@@ -13,7 +13,7 @@ export class MedicineSubmission {
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
     parentId: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: HealthRecord.name, required: true })
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.STUDENT, required: true })
     studentId: Types.ObjectId;
 
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
