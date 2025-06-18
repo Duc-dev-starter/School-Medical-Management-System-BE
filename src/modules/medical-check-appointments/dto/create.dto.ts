@@ -68,4 +68,10 @@ export class CreateMedicalCheckAppointmentDTO {
     @IsOptional()
     @IsString()
     reasonIfUnhealthy?: string;
+
+
+    @ApiProperty({ example: '2024-2025', description: 'Năm học' })
+    @IsNotEmpty()
+    @IsString()
+    schoolYear: string;
 }

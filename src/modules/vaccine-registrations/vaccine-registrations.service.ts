@@ -153,8 +153,8 @@ export class VaccineRegistrationsServices {
       <td style="padding:6px 0;">${event.vaccineName}</td>
     </tr>
     <tr>
-      <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
-      <td style="padding:6px 0;">${event.startDate ? formatDateTime(event.startDate) : ''} - ${event.endDate ? formatDateTime(event.endDate) : ''}</td>
+      <td style="padding:6px 0;color:#555;"><b>Thời gian đăng kí:</b></td>
+      <td style="padding:6px 0;">${event.startRegistrationDate ? formatDateTime(event.startRegistrationDate) : ''} - ${event.endRegistrationDate ? formatDateTime(event.endRegistrationDate) : ''}</td>
     </tr>
     <tr>
       <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>

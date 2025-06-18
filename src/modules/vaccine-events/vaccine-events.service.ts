@@ -4,8 +4,7 @@ import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { VaccineEvent, VaccineEventDocument } from './vaccine-events.schema';
-import { SearchMedicalEventDTO } from '../medical-events/dto';
-import { CreateVaccineEventDTO, UpdateVaccineEventDTO } from './dto';
+import { CreateVaccineEventDTO, SearchVaccineEventDTO, UpdateVaccineEventDTO } from './dto';
 import { Student, StudentDocument } from '../students/students.schema';
 import { User, UserDocument } from '../users/users.schema';
 import { InjectQueue } from '@nestjs/bull';
@@ -90,7 +89,7 @@ export class VaccineEventServices {
       </tr>
       <tr>
         <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
-        <td style="padding:6px 0;">${formatDateTime(payload.startDate)} - ${formatDateTime(payload.endDate)}</td>
+        <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
       </tr>
       <tr>
         <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
@@ -158,12 +157,17 @@ export class VaccineEventServices {
         return updated;
     }
 
-    async search(params: SearchMedicalEventDTO) {
-        const { pageNum, pageSize, query } = params;
+    async search(params: SearchVaccineEventDTO) {
+        const { pageNum, pageSize, query, schoolYear } = params;
         const filters: any = {};
         if (query?.trim()) {
             filters.fullName = { $regex: query, $options: 'i' };
         }
+
+        if (schoolYear?.trim()) {
+            filters.schoolYear = schoolYear.trim();
+        }
+
 
 
         const totalItems = await this.vaccineEventModel.countDocuments(filters);

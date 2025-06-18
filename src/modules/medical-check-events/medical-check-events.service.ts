@@ -88,7 +88,7 @@ export class MedicalCheckEventsService {
              </tr>
              <tr>
                <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
-               <td style="padding:6px 0;">${formatDateTime(payload.startDate)} - ${formatDateTime(payload.endDate)}</td>
+               <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
              </tr>
              <tr>
                <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>

@@ -10,4 +10,13 @@ export class SearchVaccineEventDTO extends PaginationRequestModel {
         required: false,
     })
     query?: string;
+
+    @IsOptional()
+    @IsString()
+    @ApiProperty({
+        description: 'Năm học (school year), ví dụ: 2024-2025',
+        required: false,
+        example: '2024-2025'
+    })
+    schoolYear?: string;
 }

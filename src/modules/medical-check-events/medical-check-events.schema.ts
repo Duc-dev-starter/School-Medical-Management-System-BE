@@ -18,13 +18,16 @@ export class MedicalCheckEvent {
     location: string;
 
     @Prop({ required: true })
-    startDate: Date;
+    startRegistrationDate: Date;
 
     @Prop({ required: true })
-    endDate: Date;
+    endRegistrationDate: Date;
 
     @Prop({ required: true })
     eventDate: Date;
+
+    @Prop({ required: true })
+    schoolYear: string;
 }
 
 export const MedicalCheckEventSchema = SchemaFactory.createForClass(MedicalCheckEvent);

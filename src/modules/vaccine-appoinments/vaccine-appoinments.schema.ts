@@ -37,6 +37,9 @@ export class VaccineAppointment {
 
     @Prop({ type: Date })
     vaccinatedAt?: Date;
+
+    @Prop({ required: true })
+    schoolYear: string;
 }
 
 export const VaccineAppointmentSchema = SchemaFactory.createForClass(VaccineAppointment);

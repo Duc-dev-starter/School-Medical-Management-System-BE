@@ -50,6 +50,10 @@ export class MedicalCheckAppointment {
     status: string;
 
 
+    @Prop({ required: true })
+    schoolYear: string;
+
+
     @Prop({ type: Date })
     medicalCheckedAt?: Date;
 }

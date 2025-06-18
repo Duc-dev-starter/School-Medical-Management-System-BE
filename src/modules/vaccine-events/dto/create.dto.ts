@@ -31,12 +31,17 @@ export class CreateVaccineEventDTO {
     @ApiProperty({ example: '2025-09-01T08:00:00.000Z', description: 'Ngày bắt đầu sự kiện (ISO format)' })
     @IsNotEmpty()
     @IsDateString()
-    startDate: Date;
+    startRegistrationDate: Date;
 
     @ApiProperty({ example: '2025-09-01T17:00:00.000Z', description: 'Ngày kết thúc sự kiện (ISO format)' })
     @IsNotEmpty()
     @IsDateString()
-    endDate: Date;
+    endRegistrationDate: Date;
+
+    @ApiProperty({ description: 'Thời gian sự kiện', example: '2025-09-01T08:00:00.000Z' })
+    @IsNotEmpty()
+    @IsDateString()
+    eventDate: Date;
 
     @ApiProperty({
         example: 'ongoing',
@@ -49,8 +54,9 @@ export class CreateVaccineEventDTO {
     @IsEnum(EventStatus)
     status?: EventStatus;
 
-    @ApiProperty({ example: '2025-06-10T23:59:59Z', description: 'Thời gian kết thúc đăng ký' })
+
+    @ApiProperty({ example: '2024-2025', description: 'Năm học' })
     @IsNotEmpty()
-    @IsDateString()
-    registrationDeadline: string;
+    @IsString()
+    schoolYear: string;
 }

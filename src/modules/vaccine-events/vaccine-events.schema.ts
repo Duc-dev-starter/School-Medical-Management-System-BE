@@ -27,16 +27,19 @@ export class VaccineEvent {
     location: string;
 
     @Prop({ required: true })
-    startDate: Date;
+    startRegistrationDate: Date;
 
     @Prop({ required: true })
-    endDate: Date;
+    endRegistrationDate: Date;
+
+    @Prop({ required: true })
+    eventDate: Date;
 
     @Prop({ default: 'ongoing', enum: ['ongoing', 'completed', 'cancelled'] })
     status: string;
 
     @Prop({ required: true })
-    registrationDeadline: Date;
+    schoolYear: string;
 }
 
 export const VaccineEventSchema = SchemaFactory.createForClass(VaccineEvent);

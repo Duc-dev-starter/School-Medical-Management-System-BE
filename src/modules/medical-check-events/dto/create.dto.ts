@@ -22,18 +22,24 @@ export class CreateMedicalCheckEventDTO {
     @IsString()
     location: string;
 
-    @ApiProperty({ description: 'Thời gian bắt đầu sự kiện', example: '2025-09-01T08:00:00.000Z' })
+    @ApiProperty({ example: '2025-09-01T08:00:00.000Z', description: 'Ngày bắt đầu sự kiện (ISO format)' })
     @IsNotEmpty()
     @IsDateString()
-    startDate: Date;
+    startRegistrationDate: Date;
 
-    @ApiProperty({ description: 'Thời gian kết thúc sự kiện', example: '2025-09-01T17:00:00.000Z' })
+    @ApiProperty({ example: '2025-09-01T17:00:00.000Z', description: 'Ngày kết thúc sự kiện (ISO format)' })
     @IsNotEmpty()
     @IsDateString()
-    endDate: Date;
+    endRegistrationDate: Date;
 
     @ApiProperty({ description: 'Thời gian bắt đầu sự kiện', example: '2025-09-01T08:00:00.000Z' })
     @IsNotEmpty()
     @IsDateString()
     eventDate: Date;
+
+
+    @ApiProperty({ example: '2024-2025', description: 'Năm học' })
+    @IsNotEmpty()
+    @IsString()
+    schoolYear: string;
 }
