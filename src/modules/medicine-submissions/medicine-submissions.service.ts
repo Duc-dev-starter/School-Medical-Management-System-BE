@@ -59,7 +59,7 @@ export class MedicineSubmissionsService {
 
         const nurse = await this.userModel.findOne({ _id: payload.schoolNurseId, role: "school-nurse", isDeleted: false });
         if (!nurse) {
-            throw new CustomHttpException(HttpStatus.CONFLICT, 'Phụ huynh không tồn tại');
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Y tấ không tồn tại');
         }
         const newMedicineSubmission = new this.medicineSubmissionModel({
             parentId: new Types.ObjectId(payload.parentId),
@@ -109,14 +109,26 @@ export class MedicineSubmissionsService {
                     }
                 }
             ])
-            .lean();
+            .lean() as any;
 
 
         if (!medicineSubmission) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn thuốc');
         }
 
-        return medicineSubmission;
+        const {
+            parentId,
+            schoolNurseId,
+            studentId,
+            ...rest
+        } = medicineSubmission;
+
+        return {
+            ...rest,
+            parent: parentId,
+            schoolNurse: schoolNurseId,
+            student: studentId,
+        };
     }
 
     async update(id: string, updateData: UpdateMedicineSubmissionDTO, user): Promise<MedicineSubmission> {
