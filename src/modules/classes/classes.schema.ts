@@ -16,6 +16,8 @@ export class Class {
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 
+    @Prop({ required: true })
+    schoolYear: string;
 
     @Prop({ type: [Types.ObjectId], ref: 'Student', default: [] })
     studentIds: Types.ObjectId[];

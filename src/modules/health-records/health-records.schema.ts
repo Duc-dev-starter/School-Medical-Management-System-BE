@@ -39,6 +39,9 @@ export class HealthRecord {
 
     @Prop([String])
     vaccinationHistory: string[]; // các mũi đã tiêm
+
+    @Prop({ required: true })
+    schoolYear: string;
 }
 
 export const HealthRecordSchema = SchemaFactory.createForClass(HealthRecord);

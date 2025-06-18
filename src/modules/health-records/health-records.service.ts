@@ -69,7 +69,7 @@ export class HealthRecordsService {
     }
 
     async search(params: SearchHealthRecordDTO): Promise<SearchPaginationResponseModel<HealthRecord>> {
-        const { pageNum, pageSize, query, userId } = params;
+        const { pageNum, pageSize, query, userId, schoolYear } = params;
         const filters: any = {};
 
         if (query?.trim()) {
@@ -79,6 +79,12 @@ export class HealthRecordsService {
         if (userId?.trim()) {
             filters.userId = userId;
         }
+
+
+        if (schoolYear?.trim()) {
+            filters.schoolYear = schoolYear.trim();
+        }
+
 
         const totalItems = await this.healthRecordModel.countDocuments(filters);
         const results = await this.healthRecordModel

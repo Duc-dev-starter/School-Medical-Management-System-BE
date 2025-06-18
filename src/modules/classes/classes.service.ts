@@ -102,10 +102,14 @@ export class ClassesService {
 
 
     async search(params: SearchClassDTO): Promise<SearchPaginationResponseModel<IClassWithGradeWithCount>> {
-        const { pageNum, pageSize, query } = params;
+        const { pageNum, pageSize, query, schoolYear } = params;
         const filters: any = {};
         if (query?.trim()) {
             filters.name = { $regex: query, $options: 'i' };
+        }
+
+        if (schoolYear?.trim()) {
+            filters.schoolYear = schoolYear.trim();
         }
 
         const totalItems = await this.classModel.countDocuments(filters);
