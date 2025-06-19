@@ -22,6 +22,7 @@ import { formatResponse } from 'src/utils';
 import { AppointmentService } from './appointments.service';
 import { CreateParentNurseAppointmentDTO, SearchAppointmentDTO, UpdateParentNurseAppointmentStatusDTO } from './dto';
 import { ParentNurseAppointment } from './appointments.schema';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Appointments')
@@ -48,7 +49,7 @@ export class AppointmentsController {
         @Body() dto: UpdateParentNurseAppointmentStatusDTO,
         @Req() req
     ) {
-        const appointment = await this.appointmentsService.approveAndAssignNurse(id, dto.nurseId as string, req.user);
+        const appointment = await this.appointmentsService.approveAndAssignNurse(id, dto.schoolNurseId as string, req.user);
         return formatResponse(appointment);
     }
 
@@ -74,5 +75,13 @@ export class AppointmentsController {
             pageSize: Number(pageSize),
         };
         return await this.appointmentsService.search(params);
+    }
+
+
+    @Public()
+    @Get(':id')
+    async findOne(@Param('id') id: string) {
+        const item = await this.appointmentsService.findOne(id);
+        return formatResponse(item);
     }
 }

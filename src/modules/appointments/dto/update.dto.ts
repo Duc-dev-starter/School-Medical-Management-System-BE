@@ -14,7 +14,7 @@ export class UpdateParentNurseAppointmentStatusDTO {
     @ApiPropertyOptional({ description: 'ID nurse được gán', example: '665f52e82d1e8c6d2aaf9b22' })
     @IsOptional()
     @IsString()
-    nurseId?: string;
+    schoolNurseId?: string;
 
     @ApiPropertyOptional({ description: 'Lý do từ chối/cancel', example: 'Nurse bận lịch' })
     @IsOptional()

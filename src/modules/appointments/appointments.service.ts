@@ -1,10 +1,13 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { ParentNurseAppointment } from "./appointments.schema";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { IUser } from "../users/users.interface";
-import { CreateParentNurseAppointmentDTO, SearchAppointmentDTO } from "./dto";
+import { CreateParentNurseAppointmentDTO, SearchAppointmentDTO, UpdateParentNurseAppointmentStatusDTO } from "./dto";
 import { PaginationResponseModel, SearchPaginationResponseModel } from "src/common/models";
+import { CustomHttpException } from "src/common/exceptions";
+import { AppointmentStatus } from "src/common/enums";
+import { ParentNurseAppointmentStatus } from "./dto/create.dto";
 
 @Injectable()
 export class AppointmentService {
@@ -13,6 +16,16 @@ export class AppointmentService {
     async create(dto: CreateParentNurseAppointmentDTO, parent: IUser) {
         // Kiểm tra quyền, kiểm tra học sinh thuộc phụ huynh...
         // Tạo mới với status pending, nurseId null
+
+        const existed = await this.appointmentModel.findOne({
+            studentId: dto.studentId,
+            appointmentTime: dto.appointmentTime,
+            type: dto.type,
+            isDeleted: false,
+        });
+        if (existed) {
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Lịch đã tồn tại');
+        }
         return this.appointmentModel.create({
             ...dto,
             parentId: parent._id,
@@ -49,10 +62,69 @@ export class AppointmentService {
             .skip((pageNum - 1) * pageSize)
             .limit(pageSize)
             .sort({ createdAt: -1 })
+            .setOptions({ strictPopulate: false })
+            .populate('parent')
+            .populate('student')
+            .populate('schoolNurse')
             .lean();
 
         // Trả về dạng phân trang bạn đang dùng
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
         return new SearchPaginationResponseModel(items, pageInfo);
+    }
+
+    async findOne(id: string) {
+        const item = await this.appointmentModel
+            .findOne({ _id: id, isDeleted: false })
+            .setOptions({ strictPopulate: false })
+            .setOptions({ strictPopulate: false })
+            .populate('parent')
+            .populate('student')
+            .populate('schoolNurse')
+        if (!item) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
+        }
+        return item;
+    }
+
+    async updateStatus(id: string, dto: UpdateParentNurseAppointmentStatusDTO) {
+        const appointment = await this.appointmentModel.findOne({ _id: id, isDeleted: false });
+        if (!appointment) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
+        }
+
+        // Không cho phép chuyển về "pending"
+        if (appointment.status !== ParentNurseAppointmentStatus.Pending) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ được cập nhật trạng thái khi lịch hẹn đang ở trạng thái pending');
+        }
+        if (dto.status === ParentNurseAppointmentStatus.Pending) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không thể chuyển trạng thái về pending');
+        }
+
+        if (dto.status === ParentNurseAppointmentStatus.Rejected && !dto.note) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phải có lý do khi từ chối lịch hẹn');
+        }
+        if (dto.status === ParentNurseAppointmentStatus.Cancelled && !dto.note) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phải có lý do khi huỷ lịch hẹn');
+        }
+
+        appointment.status = dto.status;
+
+        if (dto.status === ParentNurseAppointmentStatus.Approved) {
+            // Ví dụ: Gửi mail thông báo duyệt thành công nếu muốn
+            // const student = await this.studentModel.findById(appointment.studentId).populate('parents.userId').lean();
+            // const parent = ... (lấy parent info)
+            // await this.mailQueue.add('send-appointment-mail', {...});
+
+            if (dto.schoolNurseId) {
+                appointment.schoolNurseId = new Types.ObjectId(dto.schoolNurseId);
+            }
+            appointment.note = undefined;
+        } else {
+            appointment.note = dto.note;
+        }
+
+        await appointment.save();
+        return appointment;
     }
 }

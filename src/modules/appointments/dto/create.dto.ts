@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { AppointmentType } from '../appointments.schema';
 
 export enum ParentNurseAppointmentStatus {
     Pending = 'pending',
@@ -23,4 +24,13 @@ export class CreateParentNurseAppointmentDTO {
     @IsString()
     @IsNotEmpty()
     reason: string;
+
+    @ApiProperty({ description: 'Loại cuộc hẹn', enum: AppointmentType, example: AppointmentType.Other })
+    @IsEnum(AppointmentType)
+    type: AppointmentType;
+
+    @ApiProperty({ description: 'Ghi chú thêm', required: false, example: 'Mang theo sổ khám cũ' })
+    @IsString()
+    @IsOptional()
+    note?: string;
 }

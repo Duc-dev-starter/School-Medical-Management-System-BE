@@ -1,15 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, HydratedDocument } from 'mongoose';
+import { ParentNurseAppointmentStatus } from './dto/create.dto';
 
 export type ParentNurseAppointmentDocument = HydratedDocument<ParentNurseAppointment>;
 
-export enum AppointmentStatus {
-    Pending = 'pending',
-    Approved = 'approved',
-    Rejected = 'rejected',
-    Cancelled = 'cancelled',
-    Done = 'done'
-}
 
 export enum AppointmentType {
     VaccineEvent = 'vaccine-event',
@@ -26,10 +20,7 @@ export class ParentNurseAppointment {
     studentId: Types.ObjectId;
 
     @Prop({ type: Types.ObjectId, ref: 'User' })
-    nurseId?: Types.ObjectId;
-
-    @Prop({ type: Types.ObjectId, ref: 'User' })
-    managerId?: Types.ObjectId;
+    schoolNurseId?: Types.ObjectId;
 
     @Prop({ required: true })
     appointmentTime: Date;
@@ -41,8 +32,8 @@ export class ParentNurseAppointment {
     @Prop({ enum: AppointmentType, required: true })
     type: AppointmentType;
 
-    @Prop({ enum: AppointmentStatus, default: AppointmentStatus.Pending })
-    status: AppointmentStatus;
+    @Prop({ enum: ParentNurseAppointmentStatus, default: ParentNurseAppointmentStatus.Pending })
+    status: ParentNurseAppointmentStatus;
 
     @Prop()
     note?: string;
@@ -52,3 +43,24 @@ export class ParentNurseAppointment {
 }
 
 export const ParentNurseAppointmentSchema = SchemaFactory.createForClass(ParentNurseAppointment);
+
+ParentNurseAppointmentSchema.virtual('parent', {
+    ref: 'User',
+    localField: 'parentId',
+    foreignField: '_id',
+    justOne: true,
+});
+
+ParentNurseAppointmentSchema.virtual('schoolNurse', {
+    ref: 'User',
+    localField: 'schoolNurseId',
+    foreignField: '_id',
+    justOne: true,
+});
+
+ParentNurseAppointmentSchema.virtual('student', {
+    ref: 'Student',
+    localField: 'studentId',
+    foreignField: '_id',
+    justOne: true,
+});
