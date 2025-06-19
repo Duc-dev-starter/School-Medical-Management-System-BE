@@ -41,9 +41,6 @@ export class MedicalEvent {
     @Prop()
     notes: string;
 
-    @Prop({ required: true })
-    schoolYear: string;
-
     @Prop({ default: false })
     isDeleted: boolean;
 }
