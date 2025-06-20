@@ -49,7 +49,7 @@ export class VaccineAppoimentsService {
     }
 
     async search(params: SearchVaccineAppointmentDTO) {
-        const { pageNum, pageSize, query, eventId, studentId } = params;
+        const { pageNum, pageSize, query, eventId, studentId, checkBy, schoolYear } = params;
         const filters: any = {};
         if (query?.trim()) {
             filters.bloodPressure = { $regex: query, $options: 'i' };
@@ -57,6 +57,16 @@ export class VaccineAppoimentsService {
 
         if (eventId?.trim()) filters.eventId = eventId;
         if (studentId?.trim()) filters.studentId = studentId;
+
+        if (checkBy?.trim()) {
+            filters.checkBy = checkBy.trim();
+        }
+
+
+        if (schoolYear?.trim()) {
+            filters.schoolYear = schoolYear.trim();
+        }
+
 
         const totalItems = await this.vaccineAppointmentModel.countDocuments(filters);
         const items = await this.vaccineAppointmentModel

@@ -64,11 +64,28 @@ export class MedicalEventsService {
     }
 
     async findAll(params: SearchMedicalEventDTO) {
-        const { pageNum, pageSize, query } = params;
+        const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId } = params;
         const filters: any = {};
 
         if (query?.trim()) {
             filters.eventName = { $regex: query, $options: 'i' };
+        }
+
+        if (studentId?.trim()) {
+            filters.studentId = studentId.trim();
+        }
+
+
+        if (schoolNurseId?.trim()) {
+            filters.schoolNurseId = schoolNurseId.trim();
+        }
+
+        if (medicinesId?.length) {
+            filters.medicinesId = { $in: medicinesId.filter(Boolean) };
+        }
+
+        if (medicalSuppliesId?.length) {
+            filters.medicalSuppliesId = { $in: medicalSuppliesId.filter(Boolean) };
         }
 
         const totalItems = await this.medicalEventModel.countDocuments(filters);

@@ -158,11 +158,16 @@ export class VaccineEventServices {
     }
 
     async search(params: SearchVaccineEventDTO) {
-        const { pageNum, pageSize, query, schoolYear } = params;
+        const { pageNum, pageSize, query, schoolYear, gradeId } = params;
         const filters: any = {};
         if (query?.trim()) {
             filters.fullName = { $regex: query, $options: 'i' };
         }
+
+        if (gradeId?.trim()) {
+            filters.gradeId = gradeId.trim();
+        }
+
 
         if (schoolYear?.trim()) {
             filters.schoolYear = schoolYear.trim();

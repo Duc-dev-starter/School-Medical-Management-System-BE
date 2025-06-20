@@ -30,4 +30,10 @@ export class SearchVaccineAppointmentDTO extends PaginationRequestModel {
         example: '2024-2025'
     })
     schoolYear?: string;
+
+    @IsOptional()
+    @IsString()
+    @ApiProperty({ description: 'Tìm theo ID y tá', required: false })
+    checkBy?: string;
+
 }

@@ -142,14 +142,25 @@ export class MedicalCheckEventsService {
     }
 
     async findAll(params: SearchMedicalCheckEventDTO) {
-        const { pageNum, pageSize, query, studentId } = params;
+        const { pageNum, pageSize, query, studentId, gradeId, schoolYear } = params;
         const filters: any = {};
 
         if (query?.trim()) {
             filters.eventName = { $regex: query, $options: 'i' };
         }
 
-        if (studentId?.trim()) filters.studentId = studentId.trim();
+        if (studentId?.trim()) {
+            filters.studentId = studentId.trim();
+        }
+
+        if (gradeId?.trim()) {
+            filters.gradeId = gradeId.trim();
+        }
+
+        if (schoolYear?.trim()) {
+            filters.schoolYear = schoolYear.trim();
+        }
+
 
 
         const totalItems = await this.medicalCheckEventModel.countDocuments(filters);
