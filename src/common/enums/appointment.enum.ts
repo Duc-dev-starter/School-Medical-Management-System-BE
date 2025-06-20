@@ -6,3 +6,9 @@ export enum AppointmentStatus {
     Cancelled = 'cancelled',     // Lịch hẹn bị hủy
     MedicalChecked = "medicalCheckedAt"
 }
+
+export enum AppointmentType {
+    VaccineEvent = 'vaccine-event',
+    MedicalCheckEvent = 'medical-check-event',
+    Other = 'other',
+}

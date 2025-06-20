@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsDateString, IsEnum, IsOptional } from 'class-validator';
-import { AppointmentType } from '../appointments.schema';
+import { AppointmentType } from 'src/common/enums/appointment.enum';
 
 export enum ParentNurseAppointmentStatus {
     Pending = 'pending',

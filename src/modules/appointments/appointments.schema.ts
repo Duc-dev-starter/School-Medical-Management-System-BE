@@ -1,15 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, HydratedDocument } from 'mongoose';
 import { ParentNurseAppointmentStatus } from './dto/create.dto';
+import { AppointmentType } from 'src/common/enums/appointment.enum';
 
 export type ParentNurseAppointmentDocument = HydratedDocument<ParentNurseAppointment>;
 
-
-export enum AppointmentType {
-    VaccineEvent = 'vaccine-event',
-    MedicalCheckEvent = 'medical-check-event',
-    Other = 'other',
-}
 
 @Schema({ timestamps: true })
 export class ParentNurseAppointment {
