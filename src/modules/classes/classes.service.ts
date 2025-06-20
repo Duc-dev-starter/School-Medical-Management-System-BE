@@ -14,7 +14,7 @@ export class ClassesService {
         @InjectModel(Grade.name) private gradeModel: Model<GradeDocument>,) { }
 
     async create(payload: CreateClassDTO): Promise<Class> {
-        const existing = await this.classModel.findOne({ name: payload.name, isDeleted: false });
+        const existing = await this.classModel.findOne({ name: payload.name, schoolYear: payload.schoolYear, isDeleted: false });
         if (existing) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Lớp đã tồn tại');
         }
