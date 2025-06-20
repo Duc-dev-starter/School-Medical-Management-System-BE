@@ -13,6 +13,8 @@ import { formatDateTime } from 'src/utils/helpers';
 import { VaccineEvent, VaccineEventDocument } from '../vaccine-events/vaccine-events.schema';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import * as ExcelJS from 'exceljs';
+import { Response } from 'express';
 
 @Injectable()
 export class VaccineRegistrationsServices {
@@ -197,5 +199,80 @@ export class VaccineRegistrationsServices {
 
         await reg.save();
         return reg;
+    }
+
+    async exportExcel(params: SearchVaccineRegistrationDTO, res: Response) {
+        const { eventId, parentId, studentId, query } = params;
+        const filters: any = {};
+        if (query?.trim()) {
+            filters.$or = [
+                { cancellationReason: { $regex: query, $options: 'i' } },
+                { notes: { $regex: query, $options: 'i' } }
+            ];
+        }
+        if (eventId?.trim()) filters.eventId = eventId;
+        if (parentId?.trim()) filters.parentId = parentId;
+        if (studentId?.trim()) filters.studentId = studentId;
+
+        const regs = await this.vaccineRegistrationModel
+            .find(filters)
+            .sort({ createdAt: -1 })
+            .populate('parent')
+            .populate('student')
+            .populate('event')
+            .lean() as any;
+
+        // Map enum trạng thái sang tiếng Việt
+        const statusMap = {
+            pending: 'Chờ duyệt',
+            approved: 'Đã duyệt',
+            rejected: 'Từ chối',
+            cancelled: 'Đã hủy'
+        };
+
+        // Tạo workbook
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Đăng ký tiêm vaccine');
+
+        worksheet.columns = [
+            { header: 'STT', key: 'index', width: 6 },
+            { header: 'Họ tên học sinh', key: 'studentName', width: 24 },
+            { header: 'Mã học sinh', key: 'studentCode', width: 14 },
+            { header: 'Giới tính', key: 'studentGender', width: 12 },
+            { header: 'Ngày sinh', key: 'studentDob', width: 14 },
+            { header: 'Phụ huynh', key: 'parentName', width: 22 },
+            { header: 'SĐT phụ huynh', key: 'parentPhone', width: 16 },
+            { header: 'Email phụ huynh', key: 'parentEmail', width: 24 },
+            { header: 'Tên sự kiện', key: 'eventName', width: 24 },
+            { header: 'Vaccine', key: 'vaccineName', width: 18 },
+            { header: 'TG đăng ký', key: 'createdAt', width: 18 },
+            { header: 'Trạng thái', key: 'status', width: 14 },
+            { header: 'Lý do hủy/từ chối', key: 'cancellationReason', width: 22 },
+            { header: 'Ghi chú', key: 'notes', width: 24 },
+        ];
+
+        regs.forEach((reg, idx) => {
+            worksheet.addRow({
+                index: idx + 1,
+                studentName: reg.student?.fullName || '',
+                studentCode: reg.student?.studentCode || '',
+                studentGender: reg.student?.gender === 'male' ? 'Nam' : (reg.student?.gender === 'female' ? 'Nữ' : ''),
+                studentDob: reg.student?.dob ? new Date(reg.student.dob).toLocaleDateString('vi-VN') : '',
+                parentName: reg.parent?.fullName || '',
+                parentPhone: reg.parent?.phone || '',
+                parentEmail: reg.parent?.email || '',
+                eventName: reg.event?.eventName || '',
+                vaccineName: reg.event?.vaccineName || '',
+                createdAt: reg.createdAt ? new Date(reg.createdAt).toLocaleString('vi-VN') : '',
+                status: statusMap[reg.status] || reg.status,
+                cancellationReason: reg.cancellationReason || '',
+                notes: reg.notes || ''
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="vaccine_registrations.xlsx"');
+        await workbook.xlsx.write(res);
+        res.end();
     }
 }

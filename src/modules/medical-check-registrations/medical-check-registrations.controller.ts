@@ -11,6 +11,7 @@ import {
     Query,
     Req,
     Request,
+    Res,
     UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -20,6 +21,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { MedicalCheckRegistrationsService } from './medical-check-registrations.service';
 import { CreateMedicalCheckRegistrationDTO, SearchMedicalCheckRegistrationDTO, UpdateMedicalCheckRegistrationDTO, UpdateRegistrationStatusDTO } from './dto';
 import { MedicalCheckRegistration } from './medical-check-registrations.schema';
+import { Response } from 'express';
 
 @ApiTags('Medical Check Registration')
 @Controller('api/medical-check-registration')
@@ -89,5 +91,11 @@ export class MedicalCheckRegistrationsController {
         @Body() dto: UpdateRegistrationStatusDTO,
     ) {
         return this.medicalCheckRegistrationService.updateStatus(id, dto);
+    }
+
+    @Get('export/excel')
+    @ApiBearerAuth()
+    async exportExcel(@Query() query: SearchMedicalCheckRegistrationDTO, @Res() res: Response) {
+        await this.medicalCheckRegistrationService.exportExcel(query, res);
     }
 }

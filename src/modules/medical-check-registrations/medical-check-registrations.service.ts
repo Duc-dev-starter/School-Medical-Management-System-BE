@@ -14,6 +14,8 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { MedicalCheckAppointmentDocument } from '../medical-check-appointments/medical-check-appointments.schema';
 import { MedicalCheckEvent, MedicalCheckEventDocument } from '../medical-check-events/medical-check-events.schema';
+import * as ExcelJS from 'exceljs';
+import { Response } from 'express';
 
 
 @Injectable()
@@ -171,5 +173,85 @@ export class MedicalCheckRegistrationsService {
 
         await reg.save();
         return reg;
+    }
+
+    async exportExcel(params: SearchMedicalCheckRegistrationDTO, res: Response) {
+        const { query, eventId, status, studentId } = params;
+        const filters: any = {};
+
+        if (query?.trim()) {
+            filters['event.eventName'] = { $regex: query, $options: 'i' };
+        }
+        if (studentId?.trim()) {
+            filters.studentId = studentId.trim();
+        }
+        if (eventId?.trim()) {
+            filters.eventId = eventId.trim();
+        }
+        if (status?.trim()) {
+            filters.status = status.trim();
+        }
+
+        // Lấy danh sách đăng ký, populate parent, student, event
+        const regs = await this.medicalCheckregistrationModel
+            .find(filters)
+            .sort({ createdAt: -1 })
+            .populate('parent')
+            .populate('student')
+            .populate('event')
+            .lean() as any;
+
+        // Map trạng thái sang tiếng Việt
+        const statusMap: Record<string, string> = {
+            pending: 'Chờ duyệt',
+            approved: 'Đã duyệt',
+            rejected: 'Từ chối',
+            cancelled: 'Đã hủy'
+        };
+
+        // Excel setup
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Đăng ký khám sức khỏe');
+
+        worksheet.columns = [
+            { header: 'STT', key: 'index', width: 6 },
+            { header: 'Học sinh', key: 'studentName', width: 24 },
+            { header: 'Mã học sinh', key: 'studentCode', width: 14 },
+            { header: 'Ngày sinh', key: 'studentDob', width: 14 },
+            { header: 'Giới tính', key: 'studentGender', width: 10 },
+            { header: 'Phụ huynh', key: 'parentName', width: 20 },
+            { header: 'SĐT phụ huynh', key: 'parentPhone', width: 16 },
+            { header: 'Email phụ huynh', key: 'parentEmail', width: 24 },
+            { header: 'Sự kiện', key: 'eventName', width: 24 },
+            { header: 'Thời gian sự kiện', key: 'eventTime', width: 22 },
+            { header: 'Trạng thái', key: 'status', width: 14 },
+            { header: 'Lý do hủy/từ chối', key: 'cancellationReason', width: 22 },
+            { header: 'Ghi chú', key: 'note', width: 24 },
+            { header: 'Ngày duyệt', key: 'approvedAt', width: 18 }
+        ];
+
+        regs.forEach((item, idx) => {
+            worksheet.addRow({
+                index: idx + 1,
+                studentName: item.student?.fullName || '',
+                studentCode: item.student?.studentCode || '',
+                studentDob: item.student?.dob ? new Date(item.student.dob).toLocaleDateString('vi-VN') : '',
+                studentGender: item.student?.gender === 'male' ? 'Nam' : (item.student?.gender === 'female' ? 'Nữ' : ''),
+                parentName: item.parent?.fullName || '',
+                parentPhone: item.parent?.phone || '',
+                parentEmail: item.parent?.email || '',
+                eventName: item.event?.eventName || '',
+                eventTime: item.event?.eventTime ? new Date(item.event.eventTime).toLocaleString('vi-VN') : '',
+                status: statusMap[item.status] || item.status,
+                cancellationReason: item.cancellationReason || '',
+                note: item.note || '',
+                approvedAt: item.approvedAt ? new Date(item.approvedAt).toLocaleString('vi-VN') : ''
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="medical_check_registrations.xlsx"');
+        await workbook.xlsx.write(res);
+        res.end();
     }
 }

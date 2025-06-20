@@ -11,6 +11,7 @@ import {
     Query,
     Req,
     Request,
+    Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { formatResponse } from 'src/utils';
@@ -19,6 +20,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { CreateVaccineRegistrationDTO, SearchVaccineRegistrationDTO, UpdateRegistrationStatusDTO, UpdateVaccineRegistrationDTO } from './dto';
 import { VaccineRegistration } from './vaccine-registrations.schema';
 import { VaccineRegistrationsServices } from './vaccine-registrations.service';
+import { Response } from 'express';
 
 @ApiTags('Vaccine Registration')
 @Controller('api/vaccine-registration')
@@ -90,5 +92,11 @@ export class VaccineRegistrationsController {
         @Body() dto: UpdateRegistrationStatusDTO,
     ) {
         return this.vaccineRegistrationService.updateStatus(id, dto);
+    }
+
+    @ApiBearerAuth()
+    @Get('export/excel')
+    async exportExcel(@Query() query: SearchVaccineRegistrationDTO, @Res() res: Response) {
+        await this.vaccineRegistrationService.exportExcel(query, res);
     }
 }

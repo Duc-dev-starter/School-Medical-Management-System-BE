@@ -10,6 +10,8 @@ import {
     Query,
     Req,
     Request,
+    Res,
+    UploadedFile,
     UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -19,6 +21,9 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { StudentsService } from './students.service';
 import { CreateStudentDTO, SearchStudentDTO, UpdateStudentDTO } from './dto';
 import { Student } from './students.schema';
+import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Multer } from 'multer';
 
 @ApiTags('Students')
 @Controller('api/students')
@@ -79,5 +84,17 @@ export class StudentsController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.studentService.remove(id);
         return formatResponse<boolean>(result);
+    }
+
+    @ApiBearerAuth()
+    @Get('export/excel')
+    async exportToExcel(@Query() query: SearchStudentDTO, @Res() res: Response) {
+        await this.studentService.exportToExcel(query, res);
+    }
+
+    @Post('import/excel')
+    @UseInterceptors(FileInterceptor('file'))
+    async importExcel(@UploadedFile() file: Multer.File) {
+        return this.studentService.importStudentsFromExcel(file.buffer);
     }
 }

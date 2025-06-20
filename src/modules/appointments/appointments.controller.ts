@@ -8,6 +8,7 @@ import {
     Req,
     UseGuards,
     Query,
+    Res,
 } from '@nestjs/common';
 import {
     ApiBearerAuth,
@@ -23,6 +24,7 @@ import { AppointmentService } from './appointments.service';
 import { CreateParentNurseAppointmentDTO, SearchAppointmentDTO, UpdateParentNurseAppointmentStatusDTO } from './dto';
 import { ParentNurseAppointment } from './appointments.schema';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Response } from 'express';
 
 @ApiBearerAuth()
 @ApiTags('Appointments')
@@ -54,6 +56,7 @@ export class AppointmentsController {
     }
 
     @Get('search/:pageNum/:pageSize')
+    @Public()
     @ApiOperation({ summary: 'Tìm kiếm lịch hẹn có phân trang & lọc' })
     @ApiParam({ name: 'pageNum', example: 1 })
     @ApiParam({ name: 'pageSize', example: 10 })
@@ -83,5 +86,10 @@ export class AppointmentsController {
     async findOne(@Param('id') id: string) {
         const item = await this.appointmentsService.findOne(id);
         return formatResponse(item);
+    }
+
+    @Get('export/excel')
+    async exportExcel(@Query() query: SearchAppointmentDTO, @Res() res: Response) {
+        await this.appointmentsService.exportExcel(query, res);
     }
 }

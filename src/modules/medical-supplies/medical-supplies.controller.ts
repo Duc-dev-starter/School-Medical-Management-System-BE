@@ -10,6 +10,7 @@ import {
     Query,
     Req,
     Request,
+    Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { formatResponse } from 'src/utils';
@@ -18,6 +19,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { MedicalSuppliesService } from './medical-supplies.service';
 import { CreateMedicalSupplyDTO, SearchMedicalSupplyDTO, UpdateMedicalSupplyDTO } from './dto';
 import { MedicalSupply } from './medical-supplies.schema';
+import { Response } from 'express';
 
 @ApiTags('Medical Supplies')
 @Controller('api/medical-supplies')
@@ -75,5 +77,11 @@ export class MedicalSuppliesController {
     async remove(@Param('id') id: string, @Req() req,) {
         const result = await this.medicalSuppliesService.remove(id);
         return formatResponse<boolean>(result);
+    }
+
+    @Get('export/excel')
+    @ApiBearerAuth()
+    async exportExcel(@Query() query: SearchMedicalSupplyDTO, @Res() res: Response) {
+        await this.medicalSuppliesService.exportExcel(query, res);
     }
 }

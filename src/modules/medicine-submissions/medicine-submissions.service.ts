@@ -7,8 +7,6 @@ import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/comm
 import { IUser } from '../users/users.interface';
 import { MedicineSubmission, MedicineSubmissionDocument } from './medicine-submissions.schema';
 import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
-import { HealthRecordsService } from '../health-records/health-records.service';
-import { MedicineSubmissionDetailDTO } from './dto/create.dto';
 import { User, UserDocument } from '../users/users.schema';
 import { Student, StudentDocument } from '../students/students.schema';
 

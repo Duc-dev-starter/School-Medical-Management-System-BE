@@ -6,6 +6,8 @@ import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/comm
 import { Student, StudentDocument } from './students.schema';
 import { CreateStudentDTO, SearchStudentDTO, UpdateStudentDTO } from './dto';
 import { Class, ClassDocument } from '../classes/classes.schema';
+import * as ExcelJS from 'exceljs';
+import { Response } from 'express';
 
 @Injectable()
 export class StudentsService {
@@ -158,5 +160,133 @@ export class StudentsService {
         }
         await this.studentModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+    async exportToExcel(params: SearchStudentDTO, res: Response) {
+        const { query, classId, parentId } = params;
+        const filters: any = { isDeleted: false };
+        if (query?.trim()) {
+            filters.fullName = { $regex: query, $options: 'i' };
+        }
+        if (classId?.trim()) filters.classId = classId;
+        if (parentId?.trim()) filters['parents.userId'] = parentId;
+
+        // Lấy danh sách học sinh theo filter
+        const students = await this.studentModel.find(filters)
+            .populate([
+                {
+                    path: 'parents.userId',
+                    select: 'fullName phone email',
+                },
+                {
+                    path: 'classId',
+                    select: 'name',
+                }
+            ])
+            .lean() as any;
+
+        // Tạo workbook và worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Danh sách học sinh');
+
+        // Định nghĩa header
+        worksheet.columns = [
+            { header: 'STT', key: 'index', width: 6 },
+            { header: 'Mã học sinh', key: 'studentCode', width: 18 },
+            { header: 'Họ tên', key: 'fullName', width: 24 },
+            { header: 'Giới tính', key: 'gender', width: 10 },
+            { header: 'Ngày sinh', key: 'dob', width: 16 },
+            { header: 'Tên lớp', key: 'className', width: 18 },
+            { header: 'Loại phụ huynh', key: 'parentType', width: 14 },
+            { header: 'Tên phụ huynh', key: 'parentName', width: 22 },
+            { header: 'SĐT', key: 'parentPhone', width: 16 },
+            { header: 'Email', key: 'parentEmail', width: 24 },
+        ];
+
+        // Ghi data: mỗi học sinh có thể có nhiều dòng nếu nhiều phụ huynh
+        let rowIndex = 1;
+        students.forEach(student => {
+            const parents = student.parents || [];
+            if (parents.length === 0) {
+                // Nếu không có phụ huynh vẫn ghi 1 dòng
+                worksheet.addRow({
+                    index: rowIndex++,
+                    studentCode: student.studentCode,
+                    fullName: student.fullName,
+                    gender: student.gender === 'male' ? 'Nam' : 'Nữ',
+                    dob: student.dob ? (new Date(student.dob)).toLocaleDateString('vi-VN') : '',
+                    className: student.classId?.name || '',
+                    parentType: '',
+                    parentName: '',
+                    parentPhone: '',
+                    parentEmail: '',
+                });
+            } else {
+                parents.forEach(parent => {
+                    const user = parent.userId || {};
+                    worksheet.addRow({
+                        index: rowIndex++,
+                        studentCode: student.studentCode,
+                        fullName: student.fullName,
+                        gender: student.gender === 'male' ? 'Nam' : 'Nữ',
+                        dob: student.dob ? (new Date(student.dob)).toLocaleDateString('vi-VN') : '',
+                        className: student.classId?.name || '',
+                        parentType: parent.type,
+                        parentName: user.fullName || '',
+                        parentPhone: user.phone || '',
+                        parentEmail: user.email || '',
+                    });
+                });
+            }
+        });
+
+        // Xuất file excel về FE
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="students_with_parents.xlsx"');
+        await workbook.xlsx.write(res);
+        res.end();
+    }
+
+    async importStudentsFromExcel(fileBuffer: Buffer) {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(fileBuffer);
+        const worksheet = workbook.worksheets[0];
+
+        const rows = worksheet.getSheetValues(); // mảng, index 1 là header
+
+        const studentsToInsert: any[] = [];
+        for (let i = 2; i < rows.length; i++) { // Bỏ header
+            const row = rows[i];
+            if (!row || !Array.isArray(row)) continue;
+
+            // Index 1-based: [undefined, fullName, gender, dob, parentId, classId, avatar]
+            const [
+                , // index 0 (undefined)
+                fullName,
+                gender,
+                dob,
+                parentId,
+                classId,
+                avatar
+            ] = row;
+
+            // Validate bắt buộc: fullName, gender, dob, classId
+            if (!fullName || !gender || !dob || !classId) continue;
+
+            studentsToInsert.push({
+                fullName: String(fullName).trim(),
+                gender,
+                dob: (typeof dob === 'string' || typeof dob === 'number' || dob instanceof Date) ? new Date(dob) : undefined,
+                parentId: parentId ? String(parentId).trim() : undefined,
+                classId: String(classId).trim(),
+                avatar: avatar ? String(avatar).trim() : undefined,
+            });
+        }
+
+        if (studentsToInsert.length) {
+            await this.studentModel.insertMany(studentsToInsert);
+        }
+
+        return { inserted: studentsToInsert.length };
     }
 }
