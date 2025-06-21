@@ -1,12 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsDateString, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { Types } from 'mongoose';
 
 export class CreateHealthRecordDTO {
-    @ApiProperty({ description: 'ID khối lớp', example: '64faeaaeb44c9e2f12c157b1' })
-    @IsNotEmpty()
-    @IsMongoId()
-    userId: string;
 
     @ApiProperty({ description: 'ID khối lớp', example: '64faeaaeb44c9e2f12c157b1' })
     @IsNotEmpty()
@@ -62,4 +57,9 @@ export class CreateHealthRecordDTO {
     @IsArray()
     @IsString({ each: true })
     vaccinationHistory?: string[];
+
+    @ApiProperty({ example: '2024-2025', description: 'Năm học' })
+    @IsNotEmpty()
+    @IsString()
+    schoolYear: string;
 }

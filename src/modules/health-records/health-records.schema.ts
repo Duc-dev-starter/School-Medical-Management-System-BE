@@ -10,7 +10,7 @@ export class HealthRecord {
     @Prop({ type: Types.ObjectId, ref: Student.name, required: true })
     studentId: Types.ObjectId;
 
-    @Prop({ required: true })
+    @Prop()
     studentName: string;
 
     @Prop()
