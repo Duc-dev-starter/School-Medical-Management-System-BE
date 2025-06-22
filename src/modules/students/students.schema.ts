@@ -43,6 +43,9 @@ export class Student {
 
     @Prop({ required: true })
     studentCode: string;
+
+    @Prop()
+    studentIdCode: string;
 }
 
 export const StudentSchema = SchemaFactory.createForClass(Student);

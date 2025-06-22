@@ -88,4 +88,12 @@ export class HealthRecordsController {
         const result = await this.healthRecordsService.remove(id, req.user);
         return formatResponse<boolean>(result);
     }
+
+    @Get('student/:studentId/by-year/:schoolYear')
+    @ApiOperation({ summary: 'Lấy hồ sơ sức khỏe học sinh theo năm học' })
+    @ApiParam({ name: 'studentId', description: 'ID học sinh' })
+    @ApiParam({ name: 'schoolYear', description: 'Năm học dạng yyyy-yyyy, vd: 2024-2025' })
+    async findOneByStudentAndYear(@Param('studentId') studentId: string, @Param('schoolYear') schoolYear: string) {
+        return this.healthRecordsService.findOneByStudentAndSchoolYear(studentId, schoolYear);
+    }
 }

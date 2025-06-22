@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { isEmptyObject } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
@@ -37,7 +37,7 @@ export class BlogsService {
     }
 
     const newBlog = new this.blogModel({
-      categoryId,
+      categoryId: new Types.ObjectId(categoryId),
       content,
       description,
       title,

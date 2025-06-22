@@ -8,6 +8,7 @@ import { CreateStudentDTO, SearchStudentDTO, UpdateStudentDTO } from './dto';
 import { Class, ClassDocument } from '../classes/classes.schema';
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class StudentsService {
@@ -23,10 +24,13 @@ export class StudentsService {
         }
 
         const studentCode = `HS-${Date.now().toString().slice(-8)}`;
+        const randomSuffix = randomBytes(4).toString('hex'); // 8 ký tự hex
+        const studentIdCode = `${existingClass.name}-${randomSuffix}`;
 
         const item = new this.studentModel({
             ...payload,
             studentCode,
+            studentIdCode,
             classId: new Types.ObjectId(payload.classId),
         });
 
@@ -192,7 +196,7 @@ export class StudentsService {
         // Định nghĩa header
         worksheet.columns = [
             { header: 'STT', key: 'index', width: 6 },
-            { header: 'Mã học sinh', key: 'studentCode', width: 18 },
+            { header: 'Mã học sinh', key: 'studentIdCode', width: 18 },
             { header: 'Họ tên', key: 'fullName', width: 24 },
             { header: 'Giới tính', key: 'gender', width: 10 },
             { header: 'Ngày sinh', key: 'dob', width: 16 },
@@ -211,7 +215,7 @@ export class StudentsService {
                 // Nếu không có phụ huynh vẫn ghi 1 dòng
                 worksheet.addRow({
                     index: rowIndex++,
-                    studentCode: student.studentCode,
+                    studentIdCode: student.studentIdCode,
                     fullName: student.fullName,
                     gender: student.gender === 'male' ? 'Nam' : 'Nữ',
                     dob: student.dob ? (new Date(student.dob)).toLocaleDateString('vi-VN') : '',
@@ -226,7 +230,7 @@ export class StudentsService {
                     const user = parent.userId || {};
                     worksheet.addRow({
                         index: rowIndex++,
-                        studentCode: student.studentCode,
+                        studentIdCode: student.studentIdCode,
                         fullName: student.fullName,
                         gender: student.gender === 'male' ? 'Nam' : 'Nữ',
                         dob: student.dob ? (new Date(student.dob)).toLocaleDateString('vi-VN') : '',

@@ -11,7 +11,7 @@ export class SearchHealthRecordDTO extends PaginationRequestModel {
     @IsOptional()
     @IsString()
     @ApiProperty({ description: 'Tìm theo ID người dùng', required: false })
-    userId?: string;
+    studentId?: string;
 
     @IsOptional()
     @IsString()

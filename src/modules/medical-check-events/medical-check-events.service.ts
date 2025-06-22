@@ -54,7 +54,11 @@ export class MedicalCheckEventsService {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
         }
 
-        const event = new this.medicalCheckEventModel(payload);
+        const event = new this.medicalCheckEventModel({
+            ...payload,
+            gradeId: new Types.ObjectId(payload.gradeId),
+        });
+
         const savedEvent = await event.save();
 
         const gradeId = new Types.ObjectId(payload.gradeId);

@@ -69,15 +69,15 @@ export class HealthRecordsService {
     }
 
     async search(params: SearchHealthRecordDTO): Promise<SearchPaginationResponseModel<HealthRecord>> {
-        const { pageNum, pageSize, query, userId, schoolYear } = params;
+        const { pageNum, pageSize, query, studentId, schoolYear } = params;
         const filters: any = {};
 
         if (query?.trim()) {
             filters.studentName = { $regex: query, $options: 'i' };
         }
 
-        if (userId?.trim()) {
-            filters.userId = userId;
+        if (studentId?.trim()) {
+            filters.studentId = studentId;
         }
 
 
@@ -109,5 +109,13 @@ export class HealthRecordsService {
 
         await this.healthRecordModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+    async findOneByStudentAndSchoolYear(studentId: string, schoolYear: string): Promise<HealthRecord> {
+        const record = await this.healthRecordModel.findOne({ studentId, schoolYear });
+        if (!record) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
+        }
+        return record;
     }
 }

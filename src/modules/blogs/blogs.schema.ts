@@ -18,6 +18,9 @@ export class Blog {
     @Prop({ type: String, required: false })
     image: string;
 
+    @Prop({ type: String, required: false })
+    banner: string;
+
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 

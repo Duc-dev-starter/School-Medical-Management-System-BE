@@ -27,7 +27,14 @@ export class CreateBlogDTO {
     description: 'Ghi chú thêm (nếu có)',
     required: false,
   })
-  @IsOptional()
+
+  @ApiProperty({ example: 'https://', description: 'Image of the blog' })
+  @IsNotEmpty()
   @IsString()
-  image?: string;
+  image: string;
+
+  @ApiProperty({ example: 'https://', description: 'Banner of the blog' })
+  @IsNotEmpty()
+  @IsString()
+  banner: string;
 }

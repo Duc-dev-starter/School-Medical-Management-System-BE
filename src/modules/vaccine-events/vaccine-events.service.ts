@@ -55,7 +55,11 @@ export class VaccineEventServices {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
         }
 
-        const event = new this.vaccineEventModel(payload);
+        const event = new this.vaccineEventModel({
+            ...payload,
+            gradeId: new Types.ObjectId(payload.gradeId),
+        });
+
         const savedEvent = await event.save();
 
         const gradeId = new Types.ObjectId(payload.gradeId);
