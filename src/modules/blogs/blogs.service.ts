@@ -46,7 +46,7 @@ export class BlogsService {
 
     try {
       await newBlog.save();
-      await this.cacheManager.clear();
+      await this.cacheManager.reset();
     } catch (error) {
       if (error.code === 11000) {
         const field = Object.keys(error.keyPattern)[0];
@@ -71,7 +71,7 @@ export class BlogsService {
 
     if (cachedBlog) {
       console.log('✅ Lấy blog từ cache');
-      return JSON.parse(cachedBlog as string);
+      return cachedBlog;
     }
 
     const blog = await this.blogModel
@@ -106,7 +106,7 @@ export class BlogsService {
       })),
     };
 
-    await this.cacheManager.set(cacheKey, JSON.stringify(result), 60 * 1000);
+    await this.cacheManager.set(cacheKey, result, 60 * 1000);
     console.log('✅ Đã lưu blog vào cache');
     return result;
   }
@@ -136,15 +136,16 @@ export class BlogsService {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Cập nhật blog thất bại');
     }
 
-    await this.cacheManager.del(`blog:${id}`);
-    await this.cacheManager.clear();
+    await this.cacheManager.reset();
 
     return updatedBlog;
   }
-  async search(params: SearchBlogDTO) {
+
+  async search(params: SearchBlogDTO): Promise<any> {
     const cacheKey = `blogs:search:${JSON.stringify(params)}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) {
+      console.log('✅ Lấy kết quả tìm kiếm từ cache');
       return cached;
     }
 
@@ -171,7 +172,6 @@ export class BlogsService {
       .populate({ path: 'userId', select: 'fullName' })
       .lean();
 
-
     const transformedBlogs = blogs.map(blog => ({
       ...blog,
       categoryId: (blog.categoryId as any)?._id?.toString() || (blog.categoryId as any)?.toString() || null,
@@ -185,6 +185,7 @@ export class BlogsService {
     const result = new SearchPaginationResponseModel(transformedBlogs, pageInfo);
 
     await this.cacheManager.set(cacheKey, result, 60 * 1000);
+    console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
 
     return result;
   }
@@ -201,9 +202,7 @@ export class BlogsService {
     }
 
     await this.blogModel.findByIdAndUpdate(id, { isDeleted: true });
-
-    await this.cacheManager.del(`blog:${id}`);
-    await this.cacheManager.clear();
+    await this.cacheManager.reset();
     return true;
   }
 }

@@ -51,7 +51,7 @@ export class MedicalCheckEventsService {
         });
 
         if (!existingGrade) {
-            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Khối không tồn tại');
         }
 
         const event = new this.medicalCheckEventModel({

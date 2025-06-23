@@ -18,7 +18,6 @@ import { MedicineSubmissionsModule } from './modules/medicine-submissions/medici
 import { MedicalSuppliesModule } from './modules/medical-supplies/medical-supplies.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
-import { redisCacheConfig } from './config/redis.config';
 import { MedicalEventsModule } from './modules/medical-events/medical-events.module';
 import { GradesModule } from './modules/grades/grades.module';
 import { ClassesModule } from './modules/classes/classes.module';
@@ -33,6 +32,7 @@ import { BullModule } from '@nestjs/bull';
 import { MailModule } from './common/modules/mail.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import * as redisStore from 'cache-manager-redis-store';
 
 
 
@@ -59,7 +59,13 @@ import { ScheduleModule } from '@nestjs/schedule';
     MedicalCheckAppointmentsModule,
     AppointmentsModule,
     MailModule,
-    CacheModule.registerAsync(redisCacheConfig()),
+    CacheModule.register({
+      store: redisStore as any,
+      isGlobal: true,
+      host: 'localhost',
+      port: 6379,
+      ttl: 60, // default TTL
+    }),
 
     ScheduleModule.forRoot(),
 
@@ -68,14 +74,14 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
 
 
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 10,
-        },
-      ],
-    }),
+    // ThrottlerModule.forRoot({
+    //   throttlers: [
+    //     {
+    //       ttl: 60000,
+    //       limit: 10,
+    //     },
+    //   ],
+    // }),
 
     BullModule.forRoot({
       redis: {

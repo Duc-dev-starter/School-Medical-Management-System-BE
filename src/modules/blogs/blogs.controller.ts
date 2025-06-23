@@ -10,7 +10,6 @@ import {
   Query,
   Req,
   Request,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
@@ -19,7 +18,6 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { Blog } from './blogs.schema';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateBlogDTO, SearchBlogDTO, UpdateBlogDTO } from './dto';
-import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @ApiTags('Blogs')
 @Controller('api/blogs')
@@ -32,12 +30,11 @@ export class BlogsController {
   async createBlog(@Body() model: CreateBlogDTO, @Request() req) {
     console.log(model, req.user);
     const blog = await this.blogService.create(model, req.user);
-    return formatResponse<Blog>(blog);
+    return formatResponse(blog);
   }
 
-  @ApiOperation({ summary: 'Tìm kiếm danh mục có phân trang' })
-  @Get('search')
   @ApiOperation({ summary: 'Tìm kiếm blog có phân trang' })
+  @Get('search')
   @ApiQuery({ name: 'pageNum', required: false, example: 1, description: 'Trang hiện tại' })
   @ApiQuery({ name: 'pageSize', required: false, example: 10, description: 'Số lượng bản ghi mỗi trang' })
   @ApiQuery({ name: 'query', required: false })
@@ -48,13 +45,11 @@ export class BlogsController {
     return this.blogService.search(query);
   }
 
-
-  @CacheTTL(60 * 1000)
   @Public()
   @Get(':id')
   async getBlog(@Param('id') id: string) {
     const blog = await this.blogService.findOne(id);
-    return formatResponse<Blog>(blog);
+    return formatResponse(blog);
   }
 
   @Put(':id')
@@ -72,13 +67,13 @@ export class BlogsController {
       );
     }
     const blog = await this.blogService.update(id, model, req.user);
-    return formatResponse<Blog>(blog);
+    return formatResponse(blog);
   }
 
   @ApiBearerAuth()
   @Delete(':id')
   async deleteBlog(@Param('id') id: string, @Req() req,) {
     const result = await this.blogService.remove(id, req.user);
-    return formatResponse<boolean>(result);
+    return formatResponse(result);
   }
 }
