@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
@@ -15,24 +15,52 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
 @Injectable()
-export class VaccineRegistrationsServices {
-    constructor(@InjectModel(VaccineRegistration.name) private vaccineRegistrationModel: Model<VaccineRegistrationDocument>,
-        @InjectModel(VaccineAppointment.name)
-        private vaccineAppointmentModel: Model<VaccineAppointmentDocument>,
-        @InjectModel(Student.name)
-        private studentModel: Model<StudentDocument>,
-
-        @InjectModel(User.name)
-        private userModel: Model<UserDocument>,
-
-        @InjectModel(VaccineEvent.name)
-        private vaccineEventModel: Model<VaccineEventDocument>,
-
-        @InjectQueue('mailQueue')
-        private readonly mailQueue: Queue,
+export class VaccineRegistrationsServices implements OnModuleInit {
+    constructor(
+        @InjectModel(VaccineRegistration.name) private vaccineRegistrationModel: Model<VaccineRegistrationDocument>,
+        @InjectModel(VaccineAppointment.name) private vaccineAppointmentModel: Model<VaccineAppointmentDocument>,
+        @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
+        @InjectModel(User.name) private userModel: Model<UserDocument>,
+        @InjectModel(VaccineEvent.name) private vaccineEventModel: Model<VaccineEventDocument>,
+        @InjectQueue('mailQueue') private readonly mailQueue: Queue,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
+
+    async onModuleInit() {
+        console.log('🚀 Change Streams cho Vaccine Registrations đã khởi động');
+
+        this.vaccineRegistrationModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+            console.log('📩 Nhận sự kiện Change Stream cho Vaccine Registrations:', change);
+
+            const operationType = change.operationType;
+            const documentKey = change.documentKey;
+
+            if (!documentKey) return;
+
+            const registrationId = documentKey._id?.toString() || Object.values(documentKey)[0]?.toString();
+            if (!registrationId) return;
+
+            console.log(`📝 Thao tác: ${operationType}, Registration ID: ${registrationId}`);
+
+            if (['insert', 'update', 'replace', 'delete'].includes(operationType)) {
+                await this.cacheManager.del(`vaccineRegistration:${registrationId}`);
+                console.log(`🗑️ Đã xoá cache vaccineRegistration:${registrationId}`);
+
+                const searchKeys = (await this.cacheManager.get('vaccineRegistrations:search:keys')) as string[] || [];
+                for (const key of searchKeys) {
+                    await this.cacheManager.del(key);
+                    console.log(`🗑️ Đã xoá cache ${key}`);
+                }
+
+                await this.cacheManager.del('vaccineRegistrations:search:keys');
+                console.log('🧹 Đã xoá toàn bộ cache liên quan đến tìm kiếm vaccine registrations');
+            }
+        });
+    }
 
     async create(payload: CreateVaccineRegistrationDTO): Promise<VaccineRegistration> {
         const existing = await this.vaccineRegistrationModel.findOne({ parentId: payload.parentId, isDeleted: false });
@@ -45,6 +73,13 @@ export class VaccineRegistrationsServices {
     }
 
     async findOne(id: string): Promise<VaccineRegistration> {
+        const cacheKey = `vaccineRegistration:${id}`;
+        const cachedRegistration = await this.cacheManager.get(cacheKey);
+        if (cachedRegistration) {
+            console.log('✅ Lấy vaccine registration từ cache');
+            return cachedRegistration as VaccineRegistration;
+        }
+
         const item = await this.vaccineRegistrationModel
             .findById(id, { isDeleted: false })
             .setOptions({ strictPopulate: false })
@@ -54,6 +89,9 @@ export class VaccineRegistrationsServices {
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }
+
+        await this.cacheManager.set(cacheKey, item, 60);
+        console.log('✅ Đã lưu vaccine registration vào cache');
         return item;
     }
 
@@ -69,18 +107,25 @@ export class VaccineRegistrationsServices {
         return updated;
     }
 
-    async findAll(params: SearchVaccineRegistrationDTO) {
-        const { pageNum, pageSize, eventId, parentId, studentId, query } = params;
-        const filters: any = {};
-        if (query?.trim()) {
-            filters.cancellationReason = { $regex: query, $options: 'i' };
-            filters.notes = { $regex: query, $options: 'i' };
+    async findAll(params: SearchVaccineRegistrationDTO): Promise<SearchPaginationResponseModel<VaccineRegistration>> {
+        const cacheKey = `vaccineRegistrations:search:${JSON.stringify(params)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log('✅ Lấy kết quả tìm kiếm từ cache');
+            return cached as SearchPaginationResponseModel<VaccineRegistration>;
         }
 
+        const { pageNum, pageSize, eventId, parentId, studentId, query } = params;
+        const filters: any = { isDeleted: false };
+        if (query?.trim()) {
+            filters.$or = [
+                { cancellationReason: { $regex: query, $options: 'i' } },
+                { notes: { $regex: query, $options: 'i' } }
+            ];
+        }
         if (eventId?.trim()) filters.eventId = eventId;
-        if (parentId?.trim()) filters.userId = parentId;
+        if (parentId?.trim()) filters.parentId = parentId;
         if (studentId?.trim()) filters.studentId = studentId;
-
 
         const totalItems = await this.vaccineRegistrationModel.countDocuments(filters);
         const items = await this.vaccineRegistrationModel
@@ -95,7 +140,18 @@ export class VaccineRegistrationsServices {
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(items, pageInfo);
+        const result = new SearchPaginationResponseModel(items, pageInfo);
+
+        await this.cacheManager.set(cacheKey, result, 60);
+
+        const keys = (await this.cacheManager.get('vaccineRegistrations:search:keys')) as string[] || [];
+        if (!keys.includes(cacheKey)) {
+            keys.push(cacheKey);
+            await this.cacheManager.set('vaccineRegistrations:search:keys', keys, 60);
+        }
+
+        console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
+        return result;
     }
 
     async remove(id: string): Promise<boolean> {
@@ -111,7 +167,6 @@ export class VaccineRegistrationsServices {
         const reg = await this.vaccineRegistrationModel.findOne({ _id: id, isDeleted: false });
         if (!reg) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn đăng kí');
 
-        // Không cho phép chuyển về "pending"
         if (reg.status !== RegistrationStatus.Pending) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Chỉ được cập nhật trạng thái khi đơn đang ở trạng thái pending');
         }
@@ -135,7 +190,6 @@ export class VaccineRegistrationsServices {
                 isDeleted: false,
             });
 
-            // SỬA Ở ĐÂY: lấy toàn bộ phụ huynh
             const student = await this.studentModel.findById(reg.studentId)
                 .populate('parents.userId')
                 .lean();
@@ -222,7 +276,6 @@ export class VaccineRegistrationsServices {
             .populate('event')
             .lean() as any;
 
-        // Map enum trạng thái sang tiếng Việt
         const statusMap = {
             pending: 'Chờ duyệt',
             approved: 'Đã duyệt',
@@ -230,7 +283,6 @@ export class VaccineRegistrationsServices {
             cancelled: 'Đã hủy'
         };
 
-        // Tạo workbook
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Đăng ký tiêm vaccine');
 

@@ -37,6 +37,12 @@ export class HealthRecord {
     @Prop()
     hearing: string;
 
+    @Prop()
+    height: number; // chiều cao
+
+    @Prop()
+    weight: number; // cân nặng
+
     @Prop([String])
     vaccinationHistory: string[]; // các mũi đã tiêm
 

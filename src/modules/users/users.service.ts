@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './users.schema';
 import { Model } from 'mongoose';
@@ -10,12 +10,47 @@ import { SearchUserDTO, UpdateUserDTO } from './dto';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { Student, StudentDocument } from '../students/students.schema';
 import * as bcrypt from 'bcrypt';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectModel(Student.name) private studentModel: Model<StudentDocument>) {
 
+  }
+
+  async onModuleInit() {
+    console.log('🚀 Change Streams cho Users đã khởi động');
+
+    this.userModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+      console.log('📩 Nhận sự kiện Change Stream cho Users:', change);
+
+      const operationType = change.operationType;
+      const documentKey = change.documentKey;
+
+      if (!documentKey) return;
+
+      const userId = documentKey._id?.toString();
+      if (!userId) return;
+
+      console.log(`📝 Hoạt động: ${operationType}, ID User: ${userId}`);
+
+      if (['insert', 'update', 'replace', 'delete'].includes(operationType)) {
+        await this.cacheManager.del(`user:${userId}`);
+        console.log(`🗑️ Đã xoá cache user:${userId}`);
+
+        const searchKeys = (await this.cacheManager.get('users:search:keys')) as string[] || [];
+        for (const key of searchKeys) {
+          await this.cacheManager.del(key);
+          console.log(`🗑️ Đã xoá cache ${key}`);
+        }
+
+        await this.cacheManager.del('users:search:keys');
+        console.log('🧹 Đã xoá toàn bộ cache tìm kiếm users');
+      }
+    });
   }
 
   async create(payload: RegisterDTO): Promise<UserWithoutPassword> {
@@ -86,6 +121,13 @@ export class UsersService {
   async findOne(id: string): Promise<User> {
     if (!id) {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Cần có userId');
+    }
+
+    const cacheKey = `user:${id}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      console.log('✅ Lấy user từ cache');
+      return cached as User;
     }
 
     // Tìm user theo ID

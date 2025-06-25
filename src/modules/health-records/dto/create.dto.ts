@@ -62,4 +62,14 @@ export class CreateHealthRecordDTO {
     @IsNotEmpty()
     @IsString()
     schoolYear: string;
+
+    @ApiProperty({ example: '100cm', description: 'Chiều cao' })
+    @IsNotEmpty()
+    @IsString()
+    height: string;
+
+    @ApiProperty({ example: '20kg', description: 'Cân nặng' })
+    @IsNotEmpty()
+    @IsString()
+    weight: string;
 }

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
@@ -16,6 +16,8 @@ import { MedicalCheckAppointmentDocument } from '../medical-check-appointments/m
 import { MedicalCheckEvent, MedicalCheckEventDocument } from '../medical-check-events/medical-check-events.schema';
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
 
 @Injectable()
@@ -35,8 +37,40 @@ export class MedicalCheckRegistrationsService {
         @InjectModel(MedicalCheckEvent.name)
         private medicalCheckEventModel: Model<MedicalCheckEventDocument>,
 
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+
         @InjectQueue('mailQueue')
         private readonly mailQueue: Queue,) { }
+
+    async onModuleInit() {
+        console.log('🚀 Change Streams cho Medical Check Registration đã khởi động');
+
+        this.medicalCheckregistrationModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+            console.log('📩 Nhận sự kiện Change Stream:', change);
+
+            const operationType = change.operationType;
+            const documentKey = change.documentKey;
+            const registrationId = documentKey?._id?.toString() || Object.values(documentKey || {})[0]?.toString();
+
+            if (!registrationId) return;
+
+            console.log(`📝 Thao tác: ${operationType}, Event ID: ${registrationId}`);
+
+            if (["insert", "update", "replace", "delete"].includes(operationType)) {
+                await this.cacheManager.del(`medicalCheckRegistration:${registrationId}`);
+                console.log(`🗑️ Đã xoá cache medicalCheckRegistration:${registrationId}`);
+
+                const searchKeys = (await this.cacheManager.get('medicalCheckRegistrations:search:keys')) as string[] || [];
+                for (const key of searchKeys) {
+                    await this.cacheManager.del(key);
+                    console.log(`🗑️ Đã xoá cache ${key}`);
+                }
+
+                await this.cacheManager.del('medicalCheckRegistrations:search:keys');
+                console.log('🧹 Đã xoá toàn bộ cache liên quan đến tìm kiếm medicalCheckRegistration');
+            }
+        });
+    }
 
     async create(payload: CreateMedicalCheckRegistrationDTO, user: IUser): Promise<MedicalCheckRegistration> {
         const exists = await this.medicalCheckregistrationModel.findOne({ parentId: payload.parentId, isDeleted: false });

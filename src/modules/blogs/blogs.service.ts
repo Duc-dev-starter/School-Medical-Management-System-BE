@@ -1,30 +1,75 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {
+  HttpStatus,
+  Inject,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { isEmptyObject } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
-import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
+import {
+  PaginationResponseModel,
+  SearchPaginationResponseModel,
+} from 'src/common/models';
 import { Blog, BlogDocument } from './blogs.schema';
-import { CreateBlogDTO, SearchBlogDTO, UpdateBlogDTO } from './dto';
+import {
+  CreateBlogDTO,
+  SearchBlogDTO,
+  UpdateBlogDTO,
+} from './dto';
 import { CategoriesService } from '../categories/categories.service';
 import { IUser } from '../users/users.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BlogWithComments } from './blogs.interface';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
 @Injectable()
-export class BlogsService {
+export class BlogsService implements OnModuleInit {
   constructor(
     @InjectModel(Blog.name) private blogModel: Model<BlogDocument>,
     private readonly categoryService: CategoriesService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
 
+  async onModuleInit() {
+    console.log('🚀 Change Streams cho Blogs đã khởi động');
+
+    this.blogModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+      console.log('📩 Nhận sự kiện Change Streams:', change);
+
+      const operationType = change.operationType;
+      const documentKey = change.documentKey;
+
+      if (!documentKey) return;
+
+      const blogId = documentKey._id?.toString() || Object.values(documentKey)[0]?.toString();
+      if (!blogId) return;
+
+      console.log(`📝 Thao tác: ${operationType}, Blog ID: ${blogId}`);
+
+      if (['insert', 'update', 'replace', 'delete'].includes(operationType)) {
+        await this.cacheManager.del(`blog:${blogId}`);
+        console.log(`🗑️ Đã xoá cache blog:${blogId}`);
+
+        const searchKeys = (await this.cacheManager.get('blogs:search:keys')) as string[] || [];
+        for (const key of searchKeys) {
+          await this.cacheManager.del(key);
+          console.log(`🗑️ Đã xoá cache ${key}`);
+        }
+
+        await this.cacheManager.del('blogs:search:keys');
+        console.log('🧹 Đã xoá toàn bộ cache liên quan đến tìm kiếm');
+      }
+    });
+  }
+
   async create(payload: CreateBlogDTO, user: IUser): Promise<Blog> {
     if (isEmptyObject(payload)) {
-      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Dữ liệu đang trống');
+      throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Dữ liệu đang trống');
     }
 
-    const { categoryId, content, description, title } = payload;
+    const { categoryId, content, description, title, banner, image } = payload;
 
     const existingBlog = await this.blogModel.findOne({ title, isDeleted: false });
     if (existingBlog) {
@@ -40,13 +85,14 @@ export class BlogsService {
       categoryId: new Types.ObjectId(categoryId),
       content,
       description,
+      image,
+      banner,
       title,
       userId: user._id,
     });
 
     try {
       await newBlog.save();
-      await this.cacheManager.reset();
     } catch (error) {
       if (error.code === 11000) {
         const field = Object.keys(error.keyPattern)[0];
@@ -68,7 +114,6 @@ export class BlogsService {
 
     const cacheKey = `blog:${id}`;
     const cachedBlog = await this.cacheManager.get(cacheKey);
-
     if (cachedBlog) {
       console.log('✅ Lấy blog từ cache');
       return cachedBlog;
@@ -80,10 +125,7 @@ export class BlogsService {
       .populate({ path: 'userId', select: 'fullName' })
       .populate({
         path: 'comments',
-        populate: {
-          path: 'userId',
-          select: 'fullName role',
-        }
+        populate: { path: 'userId', select: 'fullName role' },
       })
       .lean<BlogWithComments>()
       .exec();
@@ -94,8 +136,8 @@ export class BlogsService {
 
     const result = {
       ...blog,
-      categoryId: (blog.categoryId as any)?._id?.toString() || (blog.categoryId as any)?.toString() || null,
-      userId: (blog.userId as any)?._id?.toString() || (blog.userId as any)?.toString() || null,
+      categoryId: (blog.categoryId as any)?._id?.toString() || null,
+      userId: (blog.userId as any)?._id?.toString() || null,
       categoryName: (blog.categoryId as any)?.name || null,
       username: (blog.userId as any)?.fullName || null,
       comments: (blog.comments || []).map((c: any) => ({
@@ -106,7 +148,7 @@ export class BlogsService {
       })),
     };
 
-    await this.cacheManager.set(cacheKey, result, 60 * 1000);
+    await this.cacheManager.set(cacheKey, result, 60);
     console.log('✅ Đã lưu blog vào cache');
     return result;
   }
@@ -117,7 +159,6 @@ export class BlogsService {
     }
 
     const blog = await this.blogModel.findOne({ _id: id, isDeleted: false });
-
     if (!blog) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy blog');
     }
@@ -135,8 +176,6 @@ export class BlogsService {
     if (!updatedBlog) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Cập nhật blog thất bại');
     }
-
-    await this.cacheManager.reset();
 
     return updatedBlog;
   }
@@ -156,7 +195,7 @@ export class BlogsService {
       filters.$or = [
         { title: { $regex: query, $options: 'i' } },
         { content: { $regex: query, $options: 'i' } },
-        { description: { $regex: query } },
+        { description: { $regex: query, $options: 'i' } },
       ];
     }
     if (categoryId?.trim()) filters.categoryId = categoryId;
@@ -174,8 +213,8 @@ export class BlogsService {
 
     const transformedBlogs = blogs.map(blog => ({
       ...blog,
-      categoryId: (blog.categoryId as any)?._id?.toString() || (blog.categoryId as any)?.toString() || null,
-      userId: (blog.userId as any)?._id?.toString() || (blog.userId as any)?.toString() || null,
+      categoryId: (blog.categoryId as any)?._id?.toString() || null,
+      userId: (blog.userId as any)?._id?.toString() || null,
       categoryName: (blog.categoryId as any)?.name || null,
       username: (blog.userId as any)?.fullName || null,
       totalComments: (blog.commentIds || []).length,
@@ -184,15 +223,21 @@ export class BlogsService {
     const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
     const result = new SearchPaginationResponseModel(transformedBlogs, pageInfo);
 
-    await this.cacheManager.set(cacheKey, result, 60 * 1000);
-    console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
+    await this.cacheManager.set(cacheKey, result, 60);
 
+    // Ghi lại key vào danh sách để có thể xoá hàng loạt khi cần
+    const keys = (await this.cacheManager.get('blogs:search:keys')) as string[] || [];
+    if (!keys.includes(cacheKey)) {
+      keys.push(cacheKey);
+      await this.cacheManager.set('blogs:search:keys', keys, 60);
+    }
+
+    console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
     return result;
   }
 
   async remove(id: string, user: IUser): Promise<boolean> {
     const blog = await this.blogModel.findOne({ _id: id, isDeleted: false });
-
     if (!blog) {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy blog');
     }
@@ -202,7 +247,6 @@ export class BlogsService {
     }
 
     await this.blogModel.findByIdAndUpdate(id, { isDeleted: true });
-    await this.cacheManager.reset();
     return true;
   }
 }

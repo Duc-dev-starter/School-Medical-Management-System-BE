@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
@@ -7,10 +7,47 @@ import { VaccineAppointment, VaccineAppointmentDocument } from './vaccine-appoin
 import { CheckVaccineAppointmentDTO, CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
 import { AppointmentStatus, Role } from 'src/common/enums';
 import { IUser } from '../users/users.interface';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
 @Injectable()
-export class VaccineAppoimentsService {
-    constructor(@InjectModel(VaccineAppointment.name) private vaccineAppointmentModel: Model<VaccineAppointmentDocument>) { }
+export class VaccineAppoimentsService implements OnModuleInit {
+    constructor(
+        @InjectModel(VaccineAppointment.name) private vaccineAppointmentModel: Model<VaccineAppointmentDocument>,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    ) { }
+
+    async onModuleInit() {
+        console.log('🚀 Change Streams cho Vaccine Appointments đã khởi động');
+
+        this.vaccineAppointmentModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+            console.log('📩 Nhận sự kiện Change Stream cho Vaccine Appointments:', change);
+
+            const operationType = change.operationType;
+            const documentKey = change.documentKey;
+
+            if (!documentKey) return;
+
+            const appointmentId = documentKey._id?.toString();
+            if (!appointmentId) return;
+
+            console.log(`📝 Thao tác: ${operationType}, Appointment ID: ${appointmentId}`);
+
+            if (['insert', 'update', 'replace', 'delete'].includes(operationType)) {
+                await this.cacheManager.del(`vaccineAppointment:${appointmentId}`);
+                console.log(`🗑️ Đã xoá cache vaccineAppointment:${appointmentId}`);
+
+                const searchKeys = (await this.cacheManager.get('vaccineAppointments:search:keys')) as string[] || [];
+                for (const key of searchKeys) {
+                    await this.cacheManager.del(key);
+                    console.log(`🗑️ Đã xoá cache ${key}`);
+                }
+
+                await this.cacheManager.del('vaccineAppointments:search:keys');
+                console.log('🧹 Đã xoá toàn bộ cache liên quan đến tìm kiếm vaccine appointments');
+            }
+        });
+    }
 
     async create(payload: CreateVaccineAppointmentDTO): Promise<VaccineAppointment> {
         const existing = await this.vaccineAppointmentModel.findOne({ studentId: payload.studentId, isDeleted: false });
@@ -23,6 +60,13 @@ export class VaccineAppoimentsService {
     }
 
     async findOne(id: string): Promise<VaccineAppointment> {
+        const cacheKey = `vaccineAppointment:${id}`;
+        const cachedAppointment = await this.cacheManager.get(cacheKey);
+        if (cachedAppointment) {
+            console.log('✅ Lấy vaccine appointment từ cache');
+            return cachedAppointment as VaccineAppointment;
+        }
+
         const item = await this.vaccineAppointmentModel
             .findById(id, { isDeleted: false })
             .setOptions({ strictPopulate: false })
@@ -32,6 +76,9 @@ export class VaccineAppoimentsService {
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
         }
+
+        await this.cacheManager.set(cacheKey, item, 60);
+        console.log('✅ Đã lưu vaccine appointment vào cache');
         return item;
     }
 
@@ -48,25 +95,23 @@ export class VaccineAppoimentsService {
         return updated;
     }
 
-    async search(params: SearchVaccineAppointmentDTO) {
+    async search(params: SearchVaccineAppointmentDTO): Promise<SearchPaginationResponseModel<VaccineAppointment>> {
+        const cacheKey = `vaccineAppointments:search:${JSON.stringify(params)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log('✅ Lấy kết quả tìm kiếm từ cache');
+            return cached as SearchPaginationResponseModel<VaccineAppointment>;
+        }
+
         const { pageNum, pageSize, query, eventId, studentId, checkBy, schoolYear } = params;
-        const filters: any = {};
+        const filters: any = { isDeleted: false };
         if (query?.trim()) {
             filters.bloodPressure = { $regex: query, $options: 'i' };
         }
-
         if (eventId?.trim()) filters.eventId = eventId;
         if (studentId?.trim()) filters.studentId = studentId;
-
-        if (checkBy?.trim()) {
-            filters.checkBy = checkBy.trim();
-        }
-
-
-        if (schoolYear?.trim()) {
-            filters.schoolYear = schoolYear.trim();
-        }
-
+        if (checkBy?.trim()) filters.checkedBy = checkBy;
+        if (schoolYear?.trim()) filters.schoolYear = schoolYear;
 
         const totalItems = await this.vaccineAppointmentModel.countDocuments(filters);
         const items = await this.vaccineAppointmentModel
@@ -81,7 +126,18 @@ export class VaccineAppoimentsService {
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(items, pageInfo);
+        const result = new SearchPaginationResponseModel(items, pageInfo);
+
+        await this.cacheManager.set(cacheKey, result, 60);
+
+        const keys = (await this.cacheManager.get('vaccineAppointments:search:keys')) as string[] || [];
+        if (!keys.includes(cacheKey)) {
+            keys.push(cacheKey);
+            await this.cacheManager.set('vaccineAppointments:search:keys', keys, 60);
+        }
+
+        console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
+        return result;
     }
 
     async remove(id: string): Promise<boolean> {
@@ -92,8 +148,6 @@ export class VaccineAppoimentsService {
         await this.vaccineAppointmentModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
     }
-
-
 
     async nurseCheckAppointment(
         id: string,

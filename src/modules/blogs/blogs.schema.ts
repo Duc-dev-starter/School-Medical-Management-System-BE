@@ -15,10 +15,10 @@ export class Blog {
     @Prop({ type: String, required: true })
     content: string;
 
-    @Prop({ type: String, required: false })
+    @Prop({ type: String })
     image: string;
 
-    @Prop({ type: String, required: false })
+    @Prop({ type: String })
     banner: string;
 
     @Prop({ type: Boolean, default: false })

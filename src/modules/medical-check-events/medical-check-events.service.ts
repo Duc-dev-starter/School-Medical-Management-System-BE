@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
@@ -14,6 +14,8 @@ import { MedicalCheckRegistration, MedicalCheckRegistrationDocument } from '../m
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { formatDateTime } from 'src/utils/helpers';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 
 @Injectable()
@@ -37,14 +39,44 @@ export class MedicalCheckEventsService {
         @InjectModel(MedicalCheckRegistration.name)
         private medicalCheckRegistrationModel: Model<MedicalCheckRegistrationDocument>,
 
+
+        @Inject(CACHE_MANAGER)
+        private readonly cacheManager: Cache,
+
         @InjectQueue('mailQueue')
         private readonly mailQueue: Queue,) { }
+
+    async onModuleInit() {
+        console.log('🚀 Change Streams cho Medical Check Events đã khởi động');
+
+        this.medicalCheckEventModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+            const id = change.documentKey?._id?.toString();
+            if (!id) return;
+
+            console.log('📦 Thao tác:', change.operationType, 'Event ID:', id);
+
+            if (['insert', 'update', 'replace', 'delete'].includes(change.operationType)) {
+                await this.cacheManager.del(`medicalCheckEvent:${id}`);
+                console.log(`🗑️ Đã xoá cache medicalCheckEvent:${id}`);
+
+                const keys = (await this.cacheManager.get('medicalCheckEvent:search:keys')) as string[] || [];
+                for (const key of keys) {
+                    await this.cacheManager.del(key);
+                    console.log(`🧹 Đã xoá cache tìm kiếm: ${key}`);
+                }
+
+                await this.cacheManager.del('medicalCheckEvent:search:keys');
+            }
+        });
+    }
+
 
     async create(payload: CreateMedicalCheckEventDTO, user: IUser): Promise<MedicalCheckEvent> {
         const exists = await this.medicalCheckEventModel.findOne({ eventName: payload.eventName, isDeleted: false });
         if (exists) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');
         }
+
         const existingGrade = await this.gradeModel.findOne({
             _id: payload.gradeId,
             isDeleted: false,
@@ -146,26 +178,20 @@ export class MedicalCheckEventsService {
     }
 
     async findAll(params: SearchMedicalCheckEventDTO) {
+        const cacheKey = `medicalCheckEvent:search:${JSON.stringify(params)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log('✅ Lấy kết quả tìm kiếm từ cache');
+            return cached;
+        }
+
         const { pageNum, pageSize, query, studentId, gradeId, schoolYear } = params;
-        const filters: any = {};
+        const filters: any = { isDeleted: false };
 
-        if (query?.trim()) {
-            filters.eventName = { $regex: query, $options: 'i' };
-        }
-
-        if (studentId?.trim()) {
-            filters.studentId = studentId.trim();
-        }
-
-        if (gradeId?.trim()) {
-            filters.gradeId = gradeId.trim();
-        }
-
-        if (schoolYear?.trim()) {
-            filters.schoolYear = schoolYear.trim();
-        }
-
-
+        if (query?.trim()) filters.eventName = { $regex: query.trim(), $options: 'i' };
+        if (studentId?.trim()) filters.studentId = studentId.trim();
+        if (gradeId?.trim()) filters.gradeId = gradeId.trim();
+        if (schoolYear?.trim()) filters.schoolYear = schoolYear.trim();
 
         const totalItems = await this.medicalCheckEventModel.countDocuments(filters);
         const results = await this.medicalCheckEventModel
@@ -176,15 +202,34 @@ export class MedicalCheckEventsService {
             .lean();
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(results, pageInfo);
+        const final = new SearchPaginationResponseModel(results, pageInfo);
+
+        await this.cacheManager.set(cacheKey, final, 60);
+
+        const keys = (await this.cacheManager.get('medicalCheckEvent:search:keys')) as string[] || [];
+        if (!keys.includes(cacheKey)) {
+            keys.push(cacheKey);
+            await this.cacheManager.set('medicalCheckEvent:search:keys', keys, 60);
+        }
+
+        console.log('✅ Đã lưu cache kết quả tìm kiếm');
+        return final;
     }
 
     async findOne(id: string): Promise<MedicalCheckEvent> {
-        const item = await this.medicalCheckEventModel.findById(id);
-        if (!item) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
+        const cacheKey = `medicalCheckEvent:${id}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log('✅ Lấy sự kiện từ cache');
+            return cached as MedicalCheckEvent;
         }
-        return item;
+
+        const event = await this.medicalCheckEventModel.findById(id);
+        if (!event) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
+
+        await this.cacheManager.set(cacheKey, event, 60);
+        console.log('✅ Đã lưu cache sự kiện');
+        return event;
     }
 
     async update(id: string, payload: UpdateMedicalCheckEventDTO, user: IUser): Promise<MedicalCheckEvent> {

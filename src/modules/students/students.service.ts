@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
@@ -9,11 +9,48 @@ import { Class, ClassDocument } from '../classes/classes.schema';
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
 import { randomBytes } from 'crypto';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
 @Injectable()
-export class StudentsService {
-    constructor(@InjectModel(Student.name) private studentModel: Model<StudentDocument>,
-        @InjectModel(Class.name) private classModel: Model<ClassDocument>,) { }
+export class StudentsService implements OnModuleInit {
+    constructor(
+        @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
+        @InjectModel(Class.name) private classModel: Model<ClassDocument>,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    ) { }
+
+    async onModuleInit() {
+        console.log('🚀 Change Streams cho Students đã khởi tạo');
+
+        this.studentModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+            console.log('📩 Nhận được sự kiện Change Stream cho Students:', change);
+
+            const operationType = change.operationType;
+            const documentKey = change.documentKey;
+
+            if (!documentKey) return;
+
+            const studentId = documentKey._id?.toString();
+            if (!studentId) return;
+
+            console.log(`📝 Hoạt động: ${operationType}, ID Học sinh: ${studentId}`);
+
+            if (['insert', 'update', 'replace', 'delete'].includes(operationType)) {
+                await this.cacheManager.del(`student:${studentId}`);
+                console.log(`🗑️ Đã xóa cache student:${studentId}`);
+
+                const searchKeys = (await this.cacheManager.get('students:search:keys')) as string[] || [];
+                for (const key of searchKeys) {
+                    await this.cacheManager.del(key);
+                    console.log(`🗑️ Đã xóa cache ${key}`);
+                }
+
+                await this.cacheManager.del('students:search:keys');
+                console.log('🧹 Đã xóa tất cả cache liên quan đến tìm kiếm học sinh');
+            }
+        });
+    }
 
     async create(payload: CreateStudentDTO): Promise<Student> {
         const { classId } = payload;
@@ -24,7 +61,7 @@ export class StudentsService {
         }
 
         const studentCode = `HS-${Date.now().toString().slice(-8)}`;
-        const randomSuffix = randomBytes(4).toString('hex'); // 8 ký tự hex
+        const randomSuffix = randomBytes(4).toString('hex');
         const studentIdCode = `${existingClass.name}-${randomSuffix}`;
 
         const item = new this.studentModel({
@@ -33,8 +70,6 @@ export class StudentsService {
             studentIdCode,
             classId: new Types.ObjectId(payload.classId),
         });
-
-
 
         const savedStudent = await item.save();
 
@@ -45,8 +80,18 @@ export class StudentsService {
         return savedStudent;
     }
 
-
     async findOne(id: string): Promise<any> {
+        if (!id) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'ID học sinh là bắt buộc');
+        }
+
+        const cacheKey = `student:${id}`;
+        const cachedStudent = await this.cacheManager.get(cacheKey);
+        if (cachedStudent) {
+            console.log('✅ Lấy học sinh từ cache');
+            return cachedStudent;
+        }
+
         const item = await this.studentModel
             .findOne({ _id: id, isDeleted: false })
             .setOptions({ strictPopulate: false })
@@ -58,7 +103,7 @@ export class StudentsService {
                 {
                     path: 'classId',
                     select: 'name positionOrder isDeleted',
-                }
+                },
             ])
             .lean()
             .exec() as any;
@@ -67,17 +112,15 @@ export class StudentsService {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
 
-        // Map parentInfos dạng phẳng
         item.parentInfos = (item.parents || []).map((p: any) => ({
             type: p.type,
-            _id: p.userId?._id || p.userId, // nếu populate thành công sẽ là object
+            _id: p.userId?._id || p.userId,
             fullName: p.userId?.fullName || '',
             phone: p.userId?.phone || '',
             email: p.userId?.email || '',
             role: p.userId?.role || '',
         }));
 
-        // Map classInfo nếu muốn
         if (item.classId && typeof item.classId === 'object') {
             item.classInfo = {
                 _id: item.classId._id,
@@ -88,22 +131,19 @@ export class StudentsService {
             item.classId = item.classId._id?.toString() || item.classId.id || '';
         }
 
-        // Xoá trường không cần thiết
         delete item.parents;
         delete item.createdAt;
         delete item.updatedAt;
         delete item.__v;
 
+        await this.cacheManager.set(cacheKey, item, 60);
+        console.log('✅ Đã lưu học sinh vào cache');
         return item;
     }
 
     async update(id: string, data: UpdateStudentDTO): Promise<Student> {
         const updated = await this.studentModel
-            .findOneAndUpdate(
-                { _id: id, isDeleted: false },
-                { $set: data },
-                { new: true }
-            )
+            .findOneAndUpdate({ _id: id, isDeleted: false }, { $set: data }, { new: true })
             .exec();
 
         if (!updated) {
@@ -112,16 +152,21 @@ export class StudentsService {
         return updated;
     }
 
+    async search(params: SearchStudentDTO): Promise<SearchPaginationResponseModel<any>> {
+        const cacheKey = `students:search:${JSON.stringify(params)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log('✅ Lấy kết quả tìm kiếm từ cache');
+            return cached as SearchPaginationResponseModel<any>;
+        }
 
-    async search(params: SearchStudentDTO) {
         const { pageNum, pageSize, query, classId, parentId } = params;
-        const filters: any = {};
+        const filters: any = { isDeleted: false };
         if (query?.trim()) {
             filters.fullName = { $regex: query, $options: 'i' };
         }
-
-        if (classId?.trim()) filters.classsId = classId;
-        if (parentId?.trim()) filters.parentId = parentId;
+        if (classId?.trim()) filters.classId = classId;
+        if (parentId?.trim()) filters['parents.userId'] = parentId;
 
         const totalItems = await this.studentModel.countDocuments(filters);
         const items = await this.studentModel
@@ -131,13 +176,13 @@ export class StudentsService {
             .setOptions({ strictPopulate: false })
             .populate({
                 path: 'classId',
-                select: 'name gradeId'
+                select: 'name gradeId',
             })
             .sort({ createdAt: -1 })
-            .lean().
-            exec() as any;
+            .lean()
+            .exec() as any;
 
-        const mappedItems = items.map(student => {
+        const mappedItems = items.map((student) => {
             let classObj = student.classId;
             let classId = '';
             if (classObj && typeof classObj === 'object') {
@@ -149,18 +194,29 @@ export class StudentsService {
                 };
                 student.classId = classId;
             }
-
             delete student.__v;
             return student;
         });
+
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
-        return new SearchPaginationResponseModel(mappedItems, pageInfo);
+        const result = new SearchPaginationResponseModel(mappedItems, pageInfo);
+
+        await this.cacheManager.set(cacheKey, result, 60);
+
+        const keys = (await this.cacheManager.get('students:search:keys')) as string[] || [];
+        if (!keys.includes(cacheKey)) {
+            keys.push(cacheKey);
+            await this.cacheManager.set('students:search:keys', keys, 60);
+        }
+
+        console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
+        return result;
     }
 
     async remove(id: string): Promise<boolean> {
-        const category = await this.studentModel.findOne({ _id: id, isDeleted: false });
-        if (!category) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hoc sinh');
+        const student = await this.studentModel.findOne({ _id: id, isDeleted: false });
+        if (!student) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
         await this.studentModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
@@ -175,8 +231,8 @@ export class StudentsService {
         if (classId?.trim()) filters.classId = classId;
         if (parentId?.trim()) filters['parents.userId'] = parentId;
 
-        // Lấy danh sách học sinh theo filter
-        const students = await this.studentModel.find(filters)
+        const students = await this.studentModel
+            .find(filters)
             .populate([
                 {
                     path: 'parents.userId',
@@ -185,15 +241,13 @@ export class StudentsService {
                 {
                     path: 'classId',
                     select: 'name',
-                }
+                },
             ])
             .lean() as any;
 
-        // Tạo workbook và worksheet
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Danh sách học sinh');
 
-        // Định nghĩa header
         worksheet.columns = [
             { header: 'STT', key: 'index', width: 6 },
             { header: 'Mã học sinh', key: 'studentIdCode', width: 18 },
@@ -207,18 +261,16 @@ export class StudentsService {
             { header: 'Email', key: 'parentEmail', width: 24 },
         ];
 
-        // Ghi data: mỗi học sinh có thể có nhiều dòng nếu nhiều phụ huynh
         let rowIndex = 1;
-        students.forEach(student => {
+        students.forEach((student) => {
             const parents = student.parents || [];
             if (parents.length === 0) {
-                // Nếu không có phụ huynh vẫn ghi 1 dòng
                 worksheet.addRow({
                     index: rowIndex++,
                     studentIdCode: student.studentIdCode,
                     fullName: student.fullName,
                     gender: student.gender === 'male' ? 'Nam' : 'Nữ',
-                    dob: student.dob ? (new Date(student.dob)).toLocaleDateString('vi-VN') : '',
+                    dob: student.dob ? new Date(student.dob).toLocaleDateString('vi-VN') : '',
                     className: student.classId?.name || '',
                     parentType: '',
                     parentName: '',
@@ -226,14 +278,14 @@ export class StudentsService {
                     parentEmail: '',
                 });
             } else {
-                parents.forEach(parent => {
+                parents.forEach((parent) => {
                     const user = parent.userId || {};
                     worksheet.addRow({
                         index: rowIndex++,
                         studentIdCode: student.studentIdCode,
                         fullName: student.fullName,
                         gender: student.gender === 'male' ? 'Nam' : 'Nữ',
-                        dob: student.dob ? (new Date(student.dob)).toLocaleDateString('vi-VN') : '',
+                        dob: student.dob ? new Date(student.dob).toLocaleDateString('vi-VN') : '',
                         className: student.classId?.name || '',
                         parentType: parent.type,
                         parentName: user.fullName || '',
@@ -244,7 +296,6 @@ export class StudentsService {
             }
         });
 
-        // Xuất file excel về FE
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename="students_with_parents.xlsx"');
         await workbook.xlsx.write(res);
@@ -256,31 +307,21 @@ export class StudentsService {
         await workbook.xlsx.load(fileBuffer);
         const worksheet = workbook.worksheets[0];
 
-        const rows = worksheet.getSheetValues(); // mảng, index 1 là header
+        const rows = worksheet.getSheetValues();
 
         const studentsToInsert: any[] = [];
-        for (let i = 2; i < rows.length; i++) { // Bỏ header
+        for (let i = 2; i < rows.length; i++) {
             const row = rows[i];
             if (!row || !Array.isArray(row)) continue;
 
-            // Index 1-based: [undefined, fullName, gender, dob, parentId, classId, avatar]
-            const [
-                , // index 0 (undefined)
-                fullName,
-                gender,
-                dob,
-                parentId,
-                classId,
-                avatar
-            ] = row;
+            const [, fullName, gender, dob, parentId, classId, avatar] = row;
 
-            // Validate bắt buộc: fullName, gender, dob, classId
             if (!fullName || !gender || !dob || !classId) continue;
 
             studentsToInsert.push({
                 fullName: String(fullName).trim(),
                 gender,
-                dob: (typeof dob === 'string' || typeof dob === 'number' || dob instanceof Date) ? new Date(dob) : undefined,
+                dob: typeof dob === 'string' || typeof dob === 'number' || dob instanceof Date ? new Date(dob) : undefined,
                 parentId: parentId ? String(parentId).trim() : undefined,
                 classId: String(classId).trim(),
                 avatar: avatar ? String(avatar).trim() : undefined,
