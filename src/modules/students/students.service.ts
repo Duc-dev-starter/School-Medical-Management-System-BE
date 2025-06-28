@@ -11,6 +11,8 @@ import { Response } from 'express';
 import { randomBytes } from 'crypto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Injectable()
 export class StudentsService implements OnModuleInit {
@@ -18,6 +20,7 @@ export class StudentsService implements OnModuleInit {
         @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
         @InjectModel(Class.name) private classModel: Model<ClassDocument>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        @InjectQueue('mailQueue') private readonly mailQueue: Queue,
     ) { }
 
     async onModuleInit() {
@@ -72,6 +75,18 @@ export class StudentsService implements OnModuleInit {
         });
 
         const savedStudent = await item.save();
+
+        for (const parent of savedStudent.parents) {
+            if (parent.email) {
+                await this.mailQueue.add('send-vaccine-mail', {
+                    to: parent.email,
+                    subject: 'Thông báo mã học sinh',
+                    html: `<p>Xin chào phụ huynh,</p>
+                        <p>Mã học sinh của con bạn là: <b>${savedStudent.studentCode}</b></p>
+                        <p>Trân trọng!</p>`,
+                });
+            }
+        }
 
         await this.classModel.findByIdAndUpdate(classId, {
             $addToSet: { studentIds: savedStudent._id },

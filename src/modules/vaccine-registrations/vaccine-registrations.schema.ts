@@ -30,6 +30,9 @@ export class VaccineRegistration {
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 
+    @Prop({ required: true })
+    schoolYear: string;
+
 }
 
 export const VaccineRegistrationSchema = SchemaFactory.createForClass(VaccineRegistration);

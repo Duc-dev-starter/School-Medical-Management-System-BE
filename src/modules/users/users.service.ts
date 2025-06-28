@@ -101,7 +101,7 @@ export class UsersService {
           throw new CustomHttpException(HttpStatus.CONFLICT, `Học sinh ${student.fullName} đã có liên kết với ${type === 'father' ? 'ba' : type === 'mother' ? 'mẹ' : 'giám hộ'}`);
         }
         // Thêm phụ huynh vào students
-        student.parents.push({ userId: newUser._id, type });
+        student.parents.push({ userId: newUser._id, type, email });
         await student.save();
       }
       // Cập nhật user.studentIds
@@ -305,5 +305,7 @@ export class UsersService {
     return userWithoutPassword as UserWithoutPassword;
   }
 
-
+  async updatePassword(userId: string, newHashedPassword: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { password: newHashedPassword });
+  }
 }

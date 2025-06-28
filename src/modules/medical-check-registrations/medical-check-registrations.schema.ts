@@ -28,6 +28,9 @@ export class MedicalCheckRegistration {
 
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
+
+    @Prop({ required: true })
+    schoolYear: string;
 }
 
 export const MedicalCheckRegistrationSchema = SchemaFactory.createForClass(MedicalCheckRegistration);

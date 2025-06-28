@@ -13,6 +13,9 @@ export class ParentInfo {
 
     @Prop({ required: true, enum: ['father', 'mother', 'guardian'] })
     type: ParentType;
+
+    @Prop({ required: true })
+    email: string;
 }
 
 export const ParentInfoSchema = SchemaFactory.createForClass(ParentInfo);
