@@ -11,7 +11,7 @@ import { StudentsModule } from '../students/students.module';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema },
     { name: Student.name, schema: StudentSchema }
     ]),
-    StudentsModule
+    StudentsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],
