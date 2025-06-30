@@ -92,4 +92,17 @@ export class AppointmentsController {
     async exportExcel(@Query() query: SearchAppointmentDTO, @Res() res: Response) {
         await this.appointmentsService.exportExcel(query, res);
     }
+
+    @Patch(':id/status')
+    @ApiOperation({ summary: 'Cập nhật trạng thái lịch hẹn (nurse/manager)' })
+    @ApiParam({ name: 'id', description: 'ID lịch hẹn' })
+    @ApiBody({ type: UpdateParentNurseAppointmentStatusDTO })
+    @ApiResponse({ status: 200, type: ParentNurseAppointment })
+    async updateStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateParentNurseAppointmentStatusDTO,
+    ) {
+        const appointment = await this.appointmentsService.updateStatus(id, dto);
+        return formatResponse(appointment);
+    }
 }
