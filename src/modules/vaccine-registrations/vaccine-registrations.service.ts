@@ -63,7 +63,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
     }
 
     async create(payload: CreateVaccineRegistrationDTO): Promise<VaccineRegistration> {
-        const existing = await this.vaccineRegistrationModel.findOne({ parentId: payload.parentId, isDeleted: false, schoolYear: payload.schoolYear });
+        const existing = await this.vaccineRegistrationModel.findOne({ parentId: payload.parentId, isDeleted: false, schoolYear: payload.schoolYear, eventId: payload.eventId });
         if (existing) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Đơn đăng kí của phụ huynh này đã tồn tại');
         }

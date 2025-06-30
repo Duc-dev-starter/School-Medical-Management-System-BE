@@ -15,7 +15,7 @@ export class ParentNurseAppointment {
     studentId: Types.ObjectId;
 
     @Prop({ type: Types.ObjectId, ref: 'User' })
-    schoolNurseId?: Types.ObjectId;
+    schoolNurseId: Types.ObjectId;
 
     @Prop({ required: true })
     appointmentTime: Date;
@@ -23,7 +23,6 @@ export class ParentNurseAppointment {
     @Prop({ required: true })
     reason: string;
 
-    // Thêm trường type
     @Prop({ enum: AppointmentType, required: true })
     type: AppointmentType;
 
@@ -35,6 +34,9 @@ export class ParentNurseAppointment {
 
     @Prop({ default: false })
     isDeleted: boolean;
+
+    @Prop({ required: false })
+    parentArrivalTime?: Date;
 }
 
 export const ParentNurseAppointmentSchema = SchemaFactory.createForClass(ParentNurseAppointment);

@@ -33,14 +33,6 @@ export class MedicineSubmissionDetailDTO {
     @IsString({ each: true })
     timeSlots: string[];
 
-    @ApiProperty({ description: 'Ngày bắt đầu', example: '2025-06-06' })
-    @IsDateString()
-    startDate: string;
-
-    @ApiProperty({ description: 'Ngày kết thúc', example: '2025-06-10' })
-    @IsDateString()
-    endDate: string;
-
     @ApiProperty({ description: 'Ghi chú', example: 'Uống sau ăn' })
     @IsString()
     @IsOptional()

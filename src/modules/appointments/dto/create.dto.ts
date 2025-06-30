@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsDateString, IsEnum, IsOptional, IsMongoId, IsBoolean } from 'class-validator';
 import { AppointmentType } from 'src/common/enums/appointment.enum';
 
 export enum ParentNurseAppointmentStatus {
@@ -11,10 +11,20 @@ export enum ParentNurseAppointmentStatus {
 }
 
 export class CreateParentNurseAppointmentDTO {
+    @ApiProperty({ description: 'ID phụ huynh', example: '665f52e82d1e8c6d2aaf9b10', required: false })
+    @IsMongoId()
+    @IsNotEmpty()
+    parentId: string;
+
     @ApiProperty({ description: 'ID học sinh', example: '665f52e82d1e8c6d2aaf9b18' })
-    @IsString()
+    @IsMongoId()
     @IsNotEmpty()
     studentId: string;
+
+    @ApiProperty({ description: 'ID y tá trường', example: '665f52e82d1e8c6d2aaf9b11', required: false })
+    @IsMongoId()
+    @IsOptional()
+    schoolNurseId?: string;
 
     @ApiProperty({ description: 'Thời gian hẹn mong muốn', example: '2025-06-15T09:00:00.000Z' })
     @IsDateString()
@@ -29,8 +39,20 @@ export class CreateParentNurseAppointmentDTO {
     @IsEnum(AppointmentType)
     type: AppointmentType;
 
+    @ApiProperty({ description: 'Trạng thái cuộc hẹn', enum: ParentNurseAppointmentStatus, required: false, default: ParentNurseAppointmentStatus.Pending })
+    @IsEnum(ParentNurseAppointmentStatus)
+    @IsOptional()
+    status?: ParentNurseAppointmentStatus;
+
     @ApiProperty({ description: 'Ghi chú thêm', required: false, example: 'Mang theo sổ khám cũ' })
     @IsString()
     @IsOptional()
     note?: string;
+
+    @ApiProperty({ description: 'Cờ xóa mềm', required: false, default: false })
+    @IsBoolean()
+    @IsOptional()
+    isDeleted?: boolean;
+
+
 }

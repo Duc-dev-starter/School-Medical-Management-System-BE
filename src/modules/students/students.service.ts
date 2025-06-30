@@ -329,17 +329,37 @@ export class StudentsService implements OnModuleInit {
             const row = rows[i];
             if (!row || !Array.isArray(row)) continue;
 
-            const [, fullName, gender, dob, parentId, classId, avatar] = row;
+            // Giả sử Excel có các cột:
+            // | STT | Họ tên | Giới tính | Ngày sinh | Parent UserId | Parent Type | Parent Email | ClassId | Avatar |
+            //           1        2            3           4                5              6             7         8
+
+            const [, fullName, gender, dob, parentUserId, parentType, parentEmail, classId, avatar] = row;
 
             if (!fullName || !gender || !dob || !classId) continue;
+
+            // Tạo mảng parents (ở đây chỉ 1 parent, bạn có thể mở rộng cho nhiều parent)
+            const parents = [];
+            if (parentUserId && parentType && parentEmail) {
+                parents.push({
+                    userId: parentUserId,
+                    type: parentType,
+                    email: parentEmail,
+                });
+            }
+
+            // Sinh mã code cho học sinh (giống hàm create)
+            const studentCode = `HS-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+            const studentIdCode = `${classId}-${Math.random().toString(36).slice(2, 8)}`;
 
             studentsToInsert.push({
                 fullName: String(fullName).trim(),
                 gender,
                 dob: typeof dob === 'string' || typeof dob === 'number' || dob instanceof Date ? new Date(dob) : undefined,
-                parentId: parentId ? String(parentId).trim() : undefined,
+                parents,
                 classId: String(classId).trim(),
                 avatar: avatar ? String(avatar).trim() : undefined,
+                studentCode,
+                studentIdCode,
             });
         }
 

@@ -115,40 +115,31 @@ export class MedicalCheckEventsService {
                     if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
                         const subject = 'Xác nhận khám sức khỏe cho học sinh';
                         const html = `
-         <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
-           <h2 style="color:#388e3c;">Sự kiện tiêm vaccine: ${payload.eventName}</h2>
-           <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-             <tr>
-               <td style="padding:6px 0;color:#555;"><b>Mô tả:</b></td>
-               <td style="padding:6px 0;">${payload.description}</td>
-             </tr>
-             <tr>
-               <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
-               <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
-             </tr>
-             <tr>
-               <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
-               <td style="padding:6px 0;">${payload.location}</td>
-             </tr>
-             <tr>
-               <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
-               <td style="padding:6px 0;">${student.fullName}</td>
-             </tr>
-           </table>
-           <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
-             <b>Vui lòng xác nhận đồng ý tiêm vaccine cho học sinh.</b>
-           </p>
-           <div style="text-align:center;margin-bottom:8px;">
-             <a href="http://localhost:3000/medical-check-registration"
-               style="display:inline-block;padding:12px 24px;background:#388e3c;color:#fff;text-decoration:none;font-weight:bold;border-radius:6px;font-size:16px;">
-               Xác nhận tiêm vaccine
-             </a>
-           </div>
-           <p style="font-size:12px;color:#888;text-align:center;">Nếu nút không hiển thị, hãy copy link sau vào trình duyệt:<br>
-             <a href="http://localhost:3000/medical-check-registration" style="color:#388e3c;">http://localhost:3000/medical-check-registration</a>
-           </p>
-         </div>
-       `;
+  <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+    <h2 style="color:#388e3c;">Sự kiện tiêm vaccine: ${payload.eventName}</h2>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Mô tả:</b></td>
+        <td style="padding:6px 0;">${payload.description}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
+        <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
+        <td style="padding:6px 0;">${payload.location}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
+        <td style="padding:6px 0;">${student.fullName}</td>
+      </tr>
+    </table>
+    <p style="margin:24px 0 0 0;font-size:16px;color:#333;text-align:center;">
+      <b>Vui lòng xem thông tin chi tiết và xác nhận trên trang web/ứng dụng của nhà trường.</b>
+    </p>
+  </div>
+`;
                         await this.mailQueue.add('send-vaccine-mail', {
                             to: parent.email,
                             subject,

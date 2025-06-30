@@ -30,19 +30,26 @@ export class AppointmentService {
         }
         return this.appointmentModel.create({
             ...dto,
-            parentId: parent._id,
-            status: 'pending'
+            studentId: new Types.ObjectId(dto.studentId),
+            parentId: new Types.ObjectId(parent._id),
+            schoolNurseId: null,
+            status: 'pending',
+            isDeleted: false,
         });
+
     }
 
     async approveAndAssignNurse(id: string, nurseId: string, manager: IUser) {
-        // Kiểm tra quyền manager, kiểm tra nurse, cập nhật trạng thái, gán nurseId
-        return this.appointmentModel.findByIdAndUpdate(id, {
-            nurseId,
-            managerId: manager._id,
-            status: 'approved'
+        const objectId = new Types.ObjectId(id);
+        const nurseObjectId = new Types.ObjectId(nurseId);
+
+
+        return this.appointmentModel.findByIdAndUpdate(objectId, {
+            schoolNurseId: nurseObjectId,
+            status: 'approved',
         }, { new: true });
     }
+
 
     async search(params: SearchAppointmentDTO) {
         const { pageNum, pageSize, query, parentId, studentId, nurseId, status, type } = params;

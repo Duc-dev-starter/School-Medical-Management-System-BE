@@ -1,5 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsEnum, IsOptional, IsArray, ValidateNested, IsEmail } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ParentInfoDTO {
+    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b3', description: 'ID của phụ huynh (userId)' })
+    @IsNotEmpty()
+    @IsString()
+    userId: string;
+
+    @ApiProperty({ example: 'father', description: 'Loại phụ huynh', enum: ['father', 'mother', 'guardian'] })
+    @IsNotEmpty()
+    @IsEnum(['father', 'mother', 'guardian'])
+    type: 'father' | 'mother' | 'guardian';
+
+    @ApiProperty({ example: 'parent@example.com', description: 'Email của phụ huynh' })
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
+}
 
 export class CreateStudentDTO {
     @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên học sinh' })
@@ -17,10 +35,27 @@ export class CreateStudentDTO {
     @IsDateString()
     dob: Date;
 
-    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b3', description: 'ID của phụ huynh', required: false })
-    @IsOptional()
-    @IsString()
-    parentId?: string;
+    @ApiProperty({
+        description: 'Danh sách thông tin phụ huynh',
+        type: [ParentInfoDTO],
+        example: [
+            {
+                userId: '64faeaaeb44c9e2f12c157b3',
+                type: 'father',
+                email: 'father@example.com'
+            },
+            {
+                userId: '64faeaaeb44c9e2f12c157b4',
+                type: 'mother',
+                email: 'mother@example.com'
+            }
+        ]
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ParentInfoDTO)
+    @IsNotEmpty()
+    parents: ParentInfoDTO[];
 
     @ApiProperty({ example: '64faeaaeb44c9e2f12c157b2', description: 'ID của lớp học' })
     @IsNotEmpty()

@@ -62,25 +62,6 @@ export class MedicineSubmissionsService implements OnModuleInit {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chưa nhập thông tin thuốc');
         }
 
-        for (const med of payload.medicines) {
-            const isConflict = await this.medicineSubmissionModel.findOne({
-                studentId: payload.studentId,
-                'medicines.name': med.name,
-                $or: [
-                    {
-                        'medicines.startDate': { $lte: new Date(med.endDate) },
-                        'medicines.endDate': { $gte: new Date(med.startDate) },
-                    },
-                ],
-            });
-            if (isConflict) {
-                throw new CustomHttpException(
-                    HttpStatus.CONFLICT,
-                    `Học sinh này đã có đơn thuốc ${med.name} trùng với khoảng thời gian yêu cầu.`
-                );
-            }
-        }
-
         const student = await this.studentModel.findOne({ _id: payload.studentId, isDeleted: false });
         if (!student) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh không tồn tại');
@@ -102,8 +83,6 @@ export class MedicineSubmissionsService implements OnModuleInit {
             schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
             medicines: payload.medicines.map((med) => ({
                 ...med,
-                startDate: new Date(med.startDate),
-                endDate: new Date(med.endDate),
             })),
             status: 'pending',
         });
@@ -297,4 +276,38 @@ export class MedicineSubmissionsService implements OnModuleInit {
         await submission.save();
         return submission;
     }
+
+    // async updateSlotStatus(
+    //     medicineSubmissionId: string,
+    //     medicineDetailId: string,
+    //     slotTime: string,
+    //     status: 'pending' | 'taken' | 'missed' | 'compensated',
+    //     note?: string,
+    //     user: IUser
+    // ) {
+    //     // Chỉ cho phép nurse hoặc teacher (tuỳ bạn policy)  
+    //     if (!['school-nurse', 'teacher'].includes(user.role)) {
+    //         throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái slot uống thuốc');
+    //     }
+
+    //     const submission = await this.medicineSubmissionModel.findOne({ _id: medicineSubmissionId, isDeleted: false });
+    //     if (!submission) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn thuốc');
+
+    //     const medicine = submission.medicines.id(medicineDetailId);
+    //     if (!medicine) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy thuốc');
+
+    //     const slot = medicine.slotStatus.find(s => String(s.time) === String(slotTime));
+    //     if (!slot) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy slot này');
+
+    //     // Nếu đã taken/missed/compensated rồi thì không cho sửa nữa (tuỳ logic)
+    //     if (['taken', 'missed', 'compensated'].includes(slot.status)) {
+    //         throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Slot này đã có trạng thái "${slot.status}", không thể cập nhật`);
+    //     }
+
+    //     slot.status = status;
+    //     if (note) slot.note = note;
+    //     await submission.save();
+
+    //     return slot;
+    // }
 }
