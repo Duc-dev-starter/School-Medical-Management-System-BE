@@ -8,8 +8,8 @@ export type ParentType = 'father' | 'mother' | 'guardian';
 
 @Schema({ _id: false })
 export class ParentInfo {
-    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
-    userId: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: false })
+    userId?: Types.ObjectId;
 
     @Prop({ required: true, enum: ['father', 'mother', 'guardian'] })
     type: ParentType;

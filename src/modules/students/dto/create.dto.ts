@@ -3,10 +3,11 @@ import { IsNotEmpty, IsString, IsDateString, IsEnum, IsOptional, IsArray, Valida
 import { Type } from 'class-transformer';
 
 export class ParentInfoDTO {
-    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b3', description: 'ID của phụ huynh (userId)' })
-    @IsNotEmpty()
+    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b3', description: 'ID của phụ huynh (userId)', required: false })
+    @IsOptional()
     @IsString()
-    userId: string;
+    userId?: string;
+
 
     @ApiProperty({ example: 'father', description: 'Loại phụ huynh', enum: ['father', 'mother', 'guardian'] })
     @IsNotEmpty()
