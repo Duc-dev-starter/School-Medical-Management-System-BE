@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { StudentsModule } from '../students/students.module';
 import { Medicine, MedicineSchema } from '../medicines/medicines.schema';
 import { MedicalSupply, MedicalSupplySchema } from '../medical-supplies/medical-supplies.schema';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
     imports: [
@@ -18,6 +19,9 @@ import { MedicalSupply, MedicalSupplySchema } from '../medical-supplies/medical-
         { name: Medicine.name, schema: MedicineSchema },
         { name: MedicalSupply.name, schema: MedicalSupplySchema },
         ]),
+        BullModule.registerQueue({
+            name: 'mailQueue',
+        }),
         UsersModule,
         StudentsModule,
     ],

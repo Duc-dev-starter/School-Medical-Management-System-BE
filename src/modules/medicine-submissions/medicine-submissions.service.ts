@@ -10,11 +10,8 @@ import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicin
 import { User, UserDocument } from '../users/users.schema';
 import { Student, StudentDocument } from '../students/students.schema';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
-interface ExtendedChangeStreamDocument<T> {
-    operationType: string;
-    documentKey: { _id: Types.ObjectId };
-}
 
 @Injectable()
 export class MedicineSubmissionsService implements OnModuleInit {

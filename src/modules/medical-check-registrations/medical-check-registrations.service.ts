@@ -81,11 +81,15 @@ export class MedicalCheckRegistrationsService {
     }
 
     async findAll(params: SearchMedicalCheckRegistrationDTO) {
-        const { pageNum, pageSize, query, eventId, status, studentId } = params;
+        const { pageNum, pageSize, query, eventId, status, studentId, parentId } = params;
         const filters: any = {};
 
         if (query?.trim()) {
             filters.eventName = { $regex: query, $options: 'i' };
+        }
+
+        if (parentId?.trim()) {
+            filters.parentId = parentId.trim();
         }
 
         if (studentId?.trim()) {

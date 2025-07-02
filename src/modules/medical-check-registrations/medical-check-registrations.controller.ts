@@ -43,8 +43,10 @@ export class MedicalCheckRegistrationsController {
     @ApiQuery({ name: 'pageNum', required: false, example: 1, description: 'Trang hiện tại' })
     @ApiQuery({ name: 'pageSize', required: false, example: 10, description: 'Số lượng bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false })
-    @ApiQuery({ name: 'categoryId', required: false })
-    @ApiQuery({ name: 'userId', required: false })
+    @ApiQuery({ name: 'parentId', required: false })
+    @ApiQuery({ name: 'studentId', required: false })
+    @ApiQuery({ name: 'eventId', required: false })
+    @ApiQuery({ name: 'status', required: false })
     @Public()
     async findAll(@Query() query: SearchMedicalCheckRegistrationDTO) {
         return this.medicalCheckRegistrationService.findAll(query);

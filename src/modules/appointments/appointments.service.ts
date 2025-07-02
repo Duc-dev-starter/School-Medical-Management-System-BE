@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { ParentNurseAppointment } from "./appointments.schema";
 import { Model, Types } from "mongoose";
@@ -12,6 +12,8 @@ import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
 import { Student, StudentDocument } from "../students/students.schema";
 import { User, UserDocument } from "../users/users.schema";
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
+import { ExtendedChangeStreamDocument } from "src/common/types/extendedChangeStreamDocument.interface";
 
 @Injectable()
 export class AppointmentService {
@@ -20,7 +22,39 @@ export class AppointmentService {
         private studentModel: Model<StudentDocument>,
 
         @InjectModel(User.name)
-        private userModel: Model<UserDocument>,) { }
+        private userModel: Model<UserDocument>,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    ) { }
+
+    async onModuleInit() {
+        console.log('🚀 Change Streams cho Parent Appointment đã khởi động');
+
+        this.appointmentModel.watch().on('change', async (change: ExtendedChangeStreamDocument<any>) => {
+            console.log('📩 Nhận sự kiện Change Stream:', change);
+
+            const operationType = change.operationType;
+            const documentKey = change.documentKey;
+            const appointmentId = documentKey?._id?.toString() || Object.values(documentKey || {})[0]?.toString();
+
+            if (!appointmentId) return;
+
+            console.log(`📝 Thao tác: ${operationType}, Event ID: ${appointmentId}`);
+
+            if (["insert", "update", "replace", "delete"].includes(operationType)) {
+                await this.cacheManager.del(`appointment:${appointmentId}`);
+                console.log(`🗑️ Đã xoá cache appointment:${appointmentId}`);
+
+                const searchKeys = (await this.cacheManager.get('appointment:search:keys')) as string[] || [];
+                for (const key of searchKeys) {
+                    await this.cacheManager.del(key);
+                    console.log(`🗑️ Đã xoá cache ${key}`);
+                }
+
+                await this.cacheManager.del('medicalEvents:search:keys');
+                console.log('🧹 Đã xoá toàn bộ cache liên quan đến tìm kiếm medicalEvent');
+            }
+        });
+    }
 
     async create(dto: CreateParentNurseAppointmentDTO, parent: IUser) {
         // Kiểm tra quyền, kiểm tra học sinh thuộc phụ huynh...
@@ -74,6 +108,13 @@ export class AppointmentService {
 
 
     async search(params: SearchAppointmentDTO) {
+        const cacheKey = `appointments:search:${JSON.stringify(params)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log('✅ Lấy kết quả tìm kiếm từ cache');
+            return cached;
+        }
+
         const { pageNum, pageSize, query, parentId, studentId, schoolNurseId, status, type } = params;
         const filters: any = {};
 
@@ -104,10 +145,28 @@ export class AppointmentService {
 
         // Trả về dạng phân trang bạn đang dùng
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
+
+        await this.cacheManager.set(cacheKey, items, 60);
+
+        // Ghi lại key vào danh sách để có thể xoá hàng loạt khi cần
+        const keys = (await this.cacheManager.get('appointments:search:keys')) as string[] || [];
+        if (!keys.includes(cacheKey)) {
+            keys.push(cacheKey);
+            await this.cacheManager.set('appointments:search:keys', keys, 60);
+        }
+
+        console.log('✅ Đã lưu kết quả tìm kiếm vào cache');
         return new SearchPaginationResponseModel(items, pageInfo);
     }
 
     async findOne(id: string) {
+        const cacheKey = `appointment:${id}`;
+        const cachedAppointment = await this.cacheManager.get(cacheKey);
+        if (cachedAppointment) {
+            console.log('✅ Lấy appointment từ cache');
+            return cachedAppointment;
+        }
+
         const item = await this.appointmentModel
             .findOne({ _id: id, isDeleted: false })
             .setOptions({ strictPopulate: false })
@@ -118,6 +177,10 @@ export class AppointmentService {
         if (!item) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
         }
+
+
+        await this.cacheManager.set(cacheKey, item, 60);
+        console.log('✅ Đã lưu appointment vào cache');
         return item;
     }
 

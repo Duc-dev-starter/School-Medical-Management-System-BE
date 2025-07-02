@@ -33,6 +33,8 @@ import {
 } from '../medical-supplies/medical-supplies.schema';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
 
 @Injectable()
 export class MedicalEventsService implements OnModuleInit {
@@ -48,6 +50,7 @@ export class MedicalEventsService implements OnModuleInit {
         @InjectModel(MedicalSupply.name)
         private medicalSupplyModel: Model<MedicalSupplyDocument>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        @InjectQueue('mailQueue') private readonly mailQueue: Queue,
     ) { }
 
     async onModuleInit() {
@@ -81,16 +84,21 @@ export class MedicalEventsService implements OnModuleInit {
     }
 
     async create(payload: CreateMedicalEventDto, user: IUser): Promise<MedicalEvent> {
+        let medicines = [];
+        let medicalSupplies = [];
         const exists = await this.medicalEventModel.findOne({ eventName: payload.eventName, isDeleted: false });
         if (exists) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');
         }
 
         const student = await this.studentModel.findOne({ _id: payload.studentId, isDeleted: false });
-        if (!student) throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh không tồn tại');
+        if (!student) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Học sinh không tồn tại');
 
         const schoolNurse = await this.userModel.findOne({ _id: payload.schoolNurseId, isDeleted: false });
-        if (!schoolNurse) throw new CustomHttpException(HttpStatus.CONFLICT, 'Y tá không tồn tại');
+        if (!schoolNurse) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Y tá không tồn tại');
+
+        const parent = await this.userModel.findOne({ _id: payload.parentId, isDeleted: false });
+        if (!parent) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phụ huynh không tồn tại');
 
         if (payload.medicinesId?.length) {
             const medicineIds = payload.medicinesId.filter(id => id && isValidObjectId(id));
@@ -108,7 +116,70 @@ export class MedicalEventsService implements OnModuleInit {
             }
         }
 
-        return this.medicalEventModel.create(payload);
+        const savedEvent = await this.medicalEventModel.create(payload);
+
+        // Gửi mail cho phụ huynh
+        if (parent?.email && student?.fullName) {
+            const subject = `Thông báo về sự kiện y tế của học sinh ${student.fullName}`;
+            const html = `
+  <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+    <h2 style="color:#d32f2f;">Thông báo sự kiện y tế: ${payload.eventName}</h2>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;color:#333;">
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
+        <td style="padding:6px 0;">${student?.fullName || '---'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Phụ huynh:</b></td>
+        <td style="padding:6px 0;">${parent?.fullName || '---'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Điều dưỡng:</b></td>
+        <td style="padding:6px 0;">${schoolNurse?.fullName || '---'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Mô tả:</b></td>
+        <td style="padding:6px 0;">${payload.description || '(Không có mô tả)'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Hành động xử lý:</b></td>
+        <td style="padding:6px 0;">${payload.actionTaken || '(Chưa có)'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Thuốc sử dụng:</b></td>
+        <td style="padding:6px 0;">${medicines?.length ? medicines.map(m => m.name).join(', ') : '(Không có)'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Dụng cụ y tế:</b></td>
+        <td style="padding:6px 0;">${medicalSupplies?.length ? medicalSupplies.map(s => s.name).join(', ') : '(Không có)'}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#555;"><b>Ghi chú:</b></td>
+        <td style="padding:6px 0;">${payload.notes || '(Không có ghi chú)'}</td>
+      </tr>
+      ${payload.isSerious
+                    ? `<tr>
+               <td style="padding:6px 0;color:#d32f2f;"><b>Đánh dấu:</b></td>
+               <td style="padding:6px 0;color:#d32f2f;">Sự kiện nghiêm trọng!</td>
+             </tr>`
+                    : ''
+                }
+    </table>
+    <p style="margin:16px 0 0 0;font-size:14px;color:#333;">
+      Nếu cần thêm thông tin, vui lòng liên hệ y tế nhà trường.<br/>
+      <b>Trân trọng,</b>
+    </p>
+  </div>
+`;
+
+            await this.mailQueue.add('send-vaccine-mail', {
+                to: parent.email,
+                subject,
+                html,
+            });
+        }
+
+        return savedEvent;
     }
 
     async findAll(params: SearchMedicalEventDTO) {
@@ -119,11 +190,12 @@ export class MedicalEventsService implements OnModuleInit {
             return cached;
         }
 
-        const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId } = params;
+        const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId, parentId } = params;
         const filters: any = { isDeleted: false };
 
         if (query?.trim()) filters.eventName = { $regex: query, $options: 'i' };
         if (studentId?.trim()) filters.studentId = studentId.trim();
+        if (parentId?.trim()) filters.parentId = parentId.trim();
         if (schoolNurseId?.trim()) filters.schoolNurseId = schoolNurseId.trim();
         if (medicinesId?.length) filters.medicinesId = { $in: medicinesId.filter(Boolean) };
         if (medicalSuppliesId?.length) filters.medicalSuppliesId = { $in: medicalSuppliesId.filter(Boolean) };
@@ -136,6 +208,7 @@ export class MedicalEventsService implements OnModuleInit {
             .sort({ createdAt: -1 })
             .setOptions({ strictPopulate: false })
             .populate('student')
+            .populate('parent')
             .populate('schoolNurse')
             .populate('medicines')
             .populate('medicalSupplies')
@@ -163,6 +236,7 @@ export class MedicalEventsService implements OnModuleInit {
             .findById(id, { isDeleted: false })
             .setOptions({ strictPopulate: false })
             .populate('student')
+            .populate('parent')
             .populate('schoolNurse')
             .populate('medicines')
             .populate('medicalSupplies');

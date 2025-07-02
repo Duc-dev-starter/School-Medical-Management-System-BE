@@ -15,6 +15,11 @@ export class SearchMedicalEventDTO extends PaginationRequestModel {
 
     @IsOptional()
     @IsString()
+    @ApiProperty({ description: 'Tìm theo ID phụ huynh', required: false })
+    parentId?: string;
+
+    @IsOptional()
+    @IsString()
     @ApiProperty({ description: 'Tìm theo ID y tá', required: false })
     schoolNurseId?: string;
 

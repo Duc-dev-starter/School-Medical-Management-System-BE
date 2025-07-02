@@ -5,16 +5,19 @@ import { Medicine } from '../medicines/medicines.schema';
 import { MedicalSupply } from '../medical-supplies/medical-supplies.schema';
 import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
 import { Student } from '../students/students.schema';
+import { User } from '../users/users.schema';
 
 export type MedicalEventDocument = MedicalEvent & Document;
 
 @Schema({ timestamps: true })
 export class MedicalEvent {
-    @Prop({ type: Types.ObjectId, ref: HealthRecord.name, required: true })
+    @Prop({ type: Types.ObjectId, ref: Student.name })
     studentId: Types.ObjectId;
 
+    @Prop({ type: Types.ObjectId, ref: User.name })
+    parentId: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER, required: true })
+    @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER })
     schoolNurseId: Types.ObjectId;
 
     @Prop({ required: true })
@@ -22,9 +25,6 @@ export class MedicalEvent {
 
     @Prop()
     description: string;
-
-    @Prop()
-    location: string;
 
     @Prop()
     actionTaken: string;
@@ -51,6 +51,13 @@ export const MedicalEventSchema = SchemaFactory.createForClass(MedicalEvent);
 MedicalEventSchema.virtual('student', {
     ref: Student.name,
     localField: 'studentId',
+    foreignField: '_id',
+    justOne: true,
+});
+
+MedicalEventSchema.virtual('parent', {
+    ref: COLLECTION_NAME.USER,
+    localField: 'parentId',
     foreignField: '_id',
     justOne: true,
 });

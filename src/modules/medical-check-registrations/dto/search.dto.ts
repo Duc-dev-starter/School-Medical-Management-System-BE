@@ -8,6 +8,11 @@ export class SearchMedicalCheckRegistrationDTO extends PaginationRequestModel {
     @IsString()
     studentId?: string;
 
+    @ApiPropertyOptional({ description: 'ID phụ huynh' })
+    @IsOptional()
+    @IsString()
+    parentId?: string;
+
     @ApiPropertyOptional({ description: 'ID sự kiện' })
     @IsOptional()
     @IsString()
