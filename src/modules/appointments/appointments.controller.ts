@@ -63,7 +63,7 @@ export class AppointmentsController {
     @ApiQuery({ name: 'query', required: false })
     @ApiQuery({ name: 'parentId', required: false })
     @ApiQuery({ name: 'studentId', required: false })
-    @ApiQuery({ name: 'nurseId', required: false })
+    @ApiQuery({ name: 'schoolNurseId', required: false })
     @ApiQuery({ name: 'managerId', required: false })
     @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'type', required: false })

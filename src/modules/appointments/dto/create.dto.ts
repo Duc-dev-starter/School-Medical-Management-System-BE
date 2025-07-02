@@ -11,10 +11,6 @@ export enum ParentNurseAppointmentStatus {
 }
 
 export class CreateParentNurseAppointmentDTO {
-    @ApiProperty({ description: 'ID phụ huynh', example: '665f52e82d1e8c6d2aaf9b10', required: false })
-    @IsMongoId()
-    @IsNotEmpty()
-    parentId: string;
 
     @ApiProperty({ description: 'ID học sinh', example: '665f52e82d1e8c6d2aaf9b18' })
     @IsMongoId()

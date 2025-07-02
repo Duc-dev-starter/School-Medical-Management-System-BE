@@ -10,14 +10,36 @@ import { AppointmentStatus } from "src/common/enums";
 import { ParentNurseAppointmentStatus } from "./dto/create.dto";
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
+import { Student, StudentDocument } from "../students/students.schema";
+import { User, UserDocument } from "../users/users.schema";
 
 @Injectable()
 export class AppointmentService {
-    constructor(@InjectModel(ParentNurseAppointment.name) private appointmentModel: Model<ParentNurseAppointment>) { }
+    constructor(@InjectModel(ParentNurseAppointment.name) private appointmentModel: Model<ParentNurseAppointment>,
+        @InjectModel(Student.name)
+        private studentModel: Model<StudentDocument>,
+
+        @InjectModel(User.name)
+        private userModel: Model<UserDocument>,) { }
 
     async create(dto: CreateParentNurseAppointmentDTO, parent: IUser) {
         // Kiểm tra quyền, kiểm tra học sinh thuộc phụ huynh...
         // Tạo mới với status pending, nurseId null
+        const existedParent = await this.userModel.findOne({ _id: parent._id, role: 'parent', isDeleted: false });
+        if (!existedParent) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy phụ huynh');
+        }
+
+        const existedNurse = await this.userModel.findOne({ _id: dto.schoolNurseId, role: 'schoolNurse', isDeleted: false });
+        if (!existedNurse) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy y tá');
+        }
+
+        const existedStudent = await this.userModel.findOne({ _id: dto.studentId, isDeleted: false });
+        if (!existedStudent) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy học sinh');
+        }
+
 
         const existed = await this.appointmentModel.findOne({
             studentId: dto.studentId,
@@ -52,17 +74,21 @@ export class AppointmentService {
 
 
     async search(params: SearchAppointmentDTO) {
-        const { pageNum, pageSize, query, parentId, studentId, nurseId, status, type } = params;
+        const { pageNum, pageSize, query, parentId, studentId, schoolNurseId, status, type } = params;
         const filters: any = {};
 
         if (query?.trim()) {
             filters.reason = { $regex: query, $options: 'i' };
         }
-        if (parentId) filters.parentId = parentId;
+        if (parentId && Types.ObjectId.isValid(parentId)) {
+            filters.parentId = new Types.ObjectId(parentId);
+        }
         if (studentId) filters.studentId = studentId;
-        if (nurseId) filters.nurseId = nurseId;
+        if (schoolNurseId) filters.schoolNurseId = schoolNurseId;
         if (status) filters.status = status;
         if (type) filters.type = type;
+
+        console.log(parentId);
 
         const totalItems = await this.appointmentModel.countDocuments(filters);
         const items = await this.appointmentModel
@@ -74,7 +100,7 @@ export class AppointmentService {
             .populate('parent')
             .populate('student')
             .populate('schoolNurse')
-            .lean();
+            .lean({ virtuals: true });
 
         // Trả về dạng phân trang bạn đang dùng
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
@@ -141,7 +167,7 @@ export class AppointmentService {
             query,
             parentId,
             studentId,
-            nurseId,
+            schoolNurseId,
             status,
             type,
         } = params;
@@ -151,7 +177,7 @@ export class AppointmentService {
         if (query?.trim()) filters.reason = { $regex: query, $options: 'i' };
         if (parentId) filters.parentId = parentId;
         if (studentId) filters.studentId = studentId;
-        if (nurseId) filters.schoolNurseId = nurseId;
+        if (schoolNurseId) filters.schoolNurseId = schoolNurseId;
         if (status) filters.status = status;
         if (type) filters.type = type;
 

@@ -23,8 +23,8 @@ export class SearchAppointmentDTO extends PaginationRequestModel {
 
     @IsOptional()
     @IsString()
-    @ApiProperty({ description: 'Lọc theo nurseId', required: false })
-    nurseId?: string;
+    @ApiProperty({ description: 'Lọc theo schoolNurseId', required: false })
+    schoolNurseId?: string;
 
     // Có thể bổ sung lọc theo status, type nếu cần
     @IsOptional()
