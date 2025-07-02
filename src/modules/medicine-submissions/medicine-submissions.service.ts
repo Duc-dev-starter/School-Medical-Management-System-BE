@@ -6,7 +6,7 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { IUser } from '../users/users.interface';
 import { MedicineSubmission, MedicineSubmissionDocument } from './medicine-submissions.schema';
-import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
+import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSlotStatusDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
 import { User, UserDocument } from '../users/users.schema';
 import { Student, StudentDocument } from '../students/students.schema';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -274,37 +274,40 @@ export class MedicineSubmissionsService implements OnModuleInit {
         return submission;
     }
 
-    // async updateSlotStatus(
-    //     medicineSubmissionId: string,
-    //     medicineDetailId: string,
-    //     slotTime: string,
-    //     status: 'pending' | 'taken' | 'missed' | 'compensated',
-    //     note?: string,
-    //     user: IUser
-    // ) {
-    //     // Chỉ cho phép nurse hoặc teacher (tuỳ bạn policy)  
-    //     if (!['school-nurse', 'teacher'].includes(user.role)) {
-    //         throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái slot uống thuốc');
-    //     }
+    async nurseUpdateSlotStatus(
+        submissionId: string,
+        user: IUser,
+        data: UpdateMedicineSlotStatusDTO
+    ) {
+        if (user.role !== 'school-nurse') {
+            throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Chỉ y tá mới được cập nhật');
+        }
 
-    //     const submission = await this.medicineSubmissionModel.findOne({ _id: medicineSubmissionId, isDeleted: false });
-    //     if (!submission) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn thuốc');
+        const submission = await this.medicineSubmissionModel.findOne({ _id: submissionId, isDeleted: false });
+        if (!submission) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy phiếu uống thuốc');
 
-    //     const medicine = submission.medicines.id(medicineDetailId);
-    //     if (!medicine) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy thuốc');
+        // Tìm đúng detail
+        const detail = submission.medicines.find(
+            (d) => (d as any)._id?.toString() === data.medicineDetailId
+        );
 
-    //     const slot = medicine.slotStatus.find(s => String(s.time) === String(slotTime));
-    //     if (!slot) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy slot này');
+        if (!detail) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy loại thuốc');
 
-    //     // Nếu đã taken/missed/compensated rồi thì không cho sửa nữa (tuỳ logic)
-    //     if (['taken', 'missed', 'compensated'].includes(slot.status)) {
-    //         throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Slot này đã có trạng thái "${slot.status}", không thể cập nhật`);
-    //     }
+        // Tìm đúng slotStatus theo ISO date
+        const slot = detail.slotStatus.find(
+            s => new Date(s.time).toISOString() === new Date(data.time).toISOString()
+        );
+        if (!slot) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy khung giờ uống thuốc');
 
-    //     slot.status = status;
-    //     if (note) slot.note = note;
-    //     await submission.save();
+        if (data.status === 'compensated' && !data.note) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Compensated phải có ghi chú');
+        }
 
-    //     return slot;
-    // }
+        slot.status = data.status;
+        if (data.note) slot.note = data.note;
+        if (data.image) slot.image = data.image;
+
+        await submission.save();
+        return submission;
+    }
 }

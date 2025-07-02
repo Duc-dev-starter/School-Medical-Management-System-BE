@@ -17,7 +17,7 @@ import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
 import { MedicineSubmissionsService } from './medicine-submissions.service';
-import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
+import { CreateMedicineSubmissionDTO, SearchMedicineSubmissionDTO, UpdateMedicineSlotStatusDTO, UpdateMedicineSubmissionDTO, UpdateMedicineSubmissionStatusDTO } from './dto';
 import { MedicineSubmission } from './medicine-submissions.schema';
 
 @ApiTags('Medicine Submissions')
@@ -88,5 +88,19 @@ export class MedicineSubmissionsController {
         @Req() req
     ) {
         return this.medicineSubmissionService.updateStatus(id, dto, req.user);
+    }
+
+    @Put(':id/update-slot-status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Nurse cập nhật trạng thái slot uống thuốc từng lần, kèm ảnh xác nhận' })
+    @ApiBody({ type: UpdateMedicineSlotStatusDTO })
+    @ApiResponse({ status: 200, type: MedicineSubmission })
+    async updateSlotStatus(
+        @Param('id') id: string,
+        @Body() dto: UpdateMedicineSlotStatusDTO,
+        @Req() req
+    ) {
+        const submission = await this.medicineSubmissionService.nurseUpdateSlotStatus(id, req.user, dto);
+        return formatResponse(submission);
     }
 }

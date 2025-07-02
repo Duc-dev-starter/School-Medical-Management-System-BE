@@ -3,16 +3,21 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 
 export type SlotStatusType = 'pending' | 'taken' | 'missed' | 'compensated';
 
+@Schema({ _id: true })
 export class SlotStatus {
-    @Prop({ required: true })
-    time: string;
+    @Prop({ required: true, type: Date })
+    time: Date; // ISO string
 
     @Prop({ required: true, enum: ['pending', 'taken', 'missed', 'compensated'], default: 'pending' })
     status: SlotStatusType;
 
     @Prop()
+    image?: string;
+
+    @Prop()
     note?: string; // Ghi chú uống trễ bao nhiêu phút nếu là compensated
 }
+export const SlotStatusSchema = SchemaFactory.createForClass(SlotStatus);
 
 @Schema({ timestamps: true })
 export class MedicineSubmissionDetail {
@@ -26,13 +31,13 @@ export class MedicineSubmissionDetail {
     usageInstructions: string; // Hướng dẫn sử dụng
 
     @Prop({ required: true })
-    quantity: number; // Số viên
+    quantity: number;
 
     @Prop({ required: true })
-    timesPerDay: number; // Số lần uống mỗi ngày
+    timesPerDay: number;
 
-    @Prop({ type: [String], required: true })
-    timeSlots: string[]; // Danh sách các khung giờ uống, ví dụ ['08:00', '12:00', '20:00']
+    @Prop({ type: [Date], required: true })
+    timeSlots: Date[]; // Danh sách các khung giờ uống (ISO)
 
     @Prop()
     note?: string;
@@ -40,7 +45,7 @@ export class MedicineSubmissionDetail {
     @Prop()
     reason?: string;
 
-    @Prop({ type: [{ time: String, status: String }], default: [] })
+    @Prop({ type: [SlotStatusSchema], default: [] })
     slotStatus: SlotStatus[];
 }
 
