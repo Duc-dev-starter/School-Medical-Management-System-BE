@@ -80,6 +80,10 @@ export class MedicineSubmissionsService implements OnModuleInit {
             schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
             medicines: payload.medicines.map((med) => ({
                 ...med,
+                slotStatus: (med.timeSlots || []).map(time => ({
+                    time: new Date(time),
+                    status: 'pending'
+                }))
             })),
             status: 'pending',
         });
