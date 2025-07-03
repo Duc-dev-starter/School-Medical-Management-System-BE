@@ -64,7 +64,7 @@ export class AppointmentService {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy phụ huynh');
         }
 
-        const existedStudent = await this.userModel.findOne({ _id: dto.studentId, isDeleted: false });
+        const existedStudent = await this.studentModel.findOne({ _id: dto.studentId, isDeleted: false });
         if (!existedStudent) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy học sinh');
         }

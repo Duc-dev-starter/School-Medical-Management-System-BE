@@ -17,11 +17,6 @@ export class CreateParentNurseAppointmentDTO {
     @IsNotEmpty()
     studentId: string;
 
-    @ApiProperty({ description: 'ID y tá trường', example: '665f52e82d1e8c6d2aaf9b11', required: false })
-    @IsMongoId()
-    @IsOptional()
-    schoolNurseId?: string;
-
     @ApiProperty({ description: 'Thời gian hẹn mong muốn', example: '2025-06-15T09:00:00.000Z' })
     @IsDateString()
     appointmentTime: string;
