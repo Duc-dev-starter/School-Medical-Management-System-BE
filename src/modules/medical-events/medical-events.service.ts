@@ -35,6 +35,7 @@ import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStr
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { MedicalEventStatus } from './dto/create.dto';
 
 @Injectable()
 export class MedicalEventsService implements OnModuleInit {
@@ -263,5 +264,14 @@ export class MedicalEventsService implements OnModuleInit {
 
         await this.medicalEventModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
+    }
+
+    async updateStatus(id: string, status: MedicalEventStatus, user: IUser): Promise<MedicalEvent> {
+        const event = await this.medicalEventModel.findById(id);
+        if (!event || event.isDeleted) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
+
+        event.status = status;
+        await event.save();
+        return event;
     }
 }

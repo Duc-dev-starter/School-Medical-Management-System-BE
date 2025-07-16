@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { HealthRecord } from '../health-records/health-records.schema';
 import { Medicine } from '../medicines/medicines.schema';
 import { MedicalSupply } from '../medical-supplies/medical-supplies.schema';
 import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
@@ -35,8 +34,23 @@ export class MedicalEvent {
     @Prop({ type: [{ type: Types.ObjectId, ref: MedicalSupply.name }], default: [] })
     medicalSuppliesId: Types.ObjectId[];
 
-    @Prop({ default: false })
-    isSerious: boolean;
+    @Prop({ enum: ['Mild', 'Moderate', 'Severe'], default: 'Mild' })
+    severityLevel: string;
+
+    @Prop({ enum: ['treated', 'monitoring', 'transferred'], default: 'treated' })
+    status: string;
+
+    @Prop({ enum: ['none', 'parent_pickup', 'hospital_transfer'], default: 'none' })
+    leaveMethod: string;
+
+    @Prop()
+    leaveTime: Date;
+
+    @Prop()
+    pickedUpBy: string; // tên người đón nếu không phải phụ huynh trong hệ thống
+
+    @Prop({ type: [String], default: [] })
+    images: string[]; // đường dẫn ảnh phụ huynh upload
 
     @Prop()
     notes: string;
@@ -46,7 +60,6 @@ export class MedicalEvent {
 }
 
 export const MedicalEventSchema = SchemaFactory.createForClass(MedicalEvent);
-
 
 MedicalEventSchema.virtual('student', {
     ref: Student.name,
