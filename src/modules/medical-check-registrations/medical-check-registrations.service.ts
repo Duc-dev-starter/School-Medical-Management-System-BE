@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { IUser } from '../users/users.interface';
@@ -96,8 +96,14 @@ export class MedicalCheckRegistrationsService {
             filters.studentId = studentId.trim();
         }
 
+
+
         if (eventId?.trim()) {
-            filters.eventId = eventId.trim();
+            if (Types.ObjectId.isValid(eventId)) {
+                filters.gradeId = new Types.ObjectId(eventId.trim());
+            } else {
+                throw new Error('Invalid eventId');
+            }
         }
 
         if (status?.trim()) {
