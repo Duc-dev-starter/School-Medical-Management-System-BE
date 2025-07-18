@@ -152,6 +152,7 @@ export class VaccineEventServices implements OnModuleInit {
                             studentId: student._id,
                             eventId: savedEvent._id,
                             status: 'pending',
+                            schoolYear: payload.schoolYear,
                         });
                     }
                 }
