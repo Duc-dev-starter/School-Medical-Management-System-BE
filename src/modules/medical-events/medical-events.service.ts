@@ -98,8 +98,15 @@ export class MedicalEventsService implements OnModuleInit {
         const schoolNurse = await this.userModel.findOne({ _id: payload.schoolNurseId, isDeleted: false });
         if (!schoolNurse) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Y tá không tồn tại');
 
-        const parent = await this.userModel.findOne({ _id: payload.parentId, isDeleted: false });
-        if (!parent) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phụ huynh không tồn tại');
+        const parentInfo = student.parents.find(p => p.userId);
+        if (!parentInfo) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy phụ huynh của học sinh');
+        }
+
+        const parent = await this.userModel.findOne({ _id: parentInfo.userId, isDeleted: false });
+        if (!parent) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Thông tin phụ huynh không hợp lệ');
+        }
 
         if (payload.medicinesId?.length) {
             const medicineIds = payload.medicinesId.filter(id => id && isValidObjectId(id));
