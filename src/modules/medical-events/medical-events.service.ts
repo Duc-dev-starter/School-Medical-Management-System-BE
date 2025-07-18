@@ -100,7 +100,7 @@ export class MedicalEventsService implements OnModuleInit {
 
         const parentInfo = student.parents.find(p => p.userId);
         if (!parentInfo) {
-            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy phụ huynh của học sinh');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phụ huynh này chưa đăng kí tài khoản');
         }
 
         const parent = await this.userModel.findOne({ _id: parentInfo.userId, isDeleted: false });
