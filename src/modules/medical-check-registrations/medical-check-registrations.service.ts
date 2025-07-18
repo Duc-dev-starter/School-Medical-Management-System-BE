@@ -73,9 +73,9 @@ export class MedicalCheckRegistrationsService {
     }
 
     async create(payload: CreateMedicalCheckRegistrationDTO, user: IUser): Promise<MedicalCheckRegistration> {
-        const exists = await this.medicalCheckregistrationModel.findOne({ parentId: payload.parentId, isDeleted: false, schoolYear: payload.schoolYear });
+        const exists = await this.medicalCheckregistrationModel.findOne({ parentId: payload.parentId, isDeleted: false, schoolYear: payload.schoolYear, studentId: payload.studentId, eventId: payload.eventId });
         if (exists) {
-            throw new CustomHttpException(HttpStatus.CONFLICT, 'Đơn dki đã tồn tại');
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Đơn đăng kí đã tồn tại');
         }
         return this.medicalCheckregistrationModel.create(payload);
     }
