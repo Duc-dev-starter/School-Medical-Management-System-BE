@@ -17,7 +17,7 @@ export class VaccineRegistrationCronService {
     ) { }
 
     // Chạy job lúc 0h00 mỗi ngày
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    @Cron(CronExpression.EVERY_MINUTE)
     async rejectExpiredVaccineRegistrations() {
         const now = new Date();
 

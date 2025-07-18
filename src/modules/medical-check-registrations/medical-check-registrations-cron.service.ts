@@ -16,7 +16,7 @@ export class MedicalCheckRegistrationCronService {
         private readonly registrationModel: Model<MedicalCheckRegistrationDocument>,
     ) { }
 
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    @Cron(CronExpression.EVERY_MINUTE)
     async rejectExpiredRegistrations() {
         const now = new Date();
         const expiredEvents = await this.eventModel.find({ endDate: { $lt: now } }, '_id');

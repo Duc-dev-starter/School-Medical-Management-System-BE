@@ -14,7 +14,7 @@ export class MedicineSubmissionCronService {
     ) { }
 
     // Chạy mỗi 5 phút
-    @Cron(CronExpression.EVERY_5_MINUTES)
+    @Cron(CronExpression.EVERY_MINUTE)
     async autoSetMissedSlots() {
         const now = new Date();
         // Lấy hết các đơn thuốc còn tồn tại

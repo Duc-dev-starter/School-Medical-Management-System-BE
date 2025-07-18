@@ -63,6 +63,19 @@ export class StudentsService implements OnModuleInit {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
         }
 
+        const parentEmails = payload.parents.map(p => p.email);
+
+        const duplicateStudent = await this.studentModel.findOne({
+            fullName: payload.fullName,
+            dob: payload.dob,
+            classId: classId,
+            'parents.email': { $in: parentEmails },
+            isDeleted: false,
+        });
+        if (duplicateStudent) {
+            throw new CustomHttpException(HttpStatus.CONFLICT, 'Học sinh đã tồn tại trong lớp này với thông tin phụ huynh tương tự');
+        }
+
         const studentCode = `HS-${Date.now().toString().slice(-8)}`;
         const randomSuffix = randomBytes(4).toString('hex');
         const studentIdCode = `${existingClass.name}-${randomSuffix}`;
@@ -75,6 +88,8 @@ export class StudentsService implements OnModuleInit {
         });
 
         const savedStudent = await item.save();
+
+        console.log(item)
 
         for (const parent of savedStudent.parents) {
             if (parent.email) {
