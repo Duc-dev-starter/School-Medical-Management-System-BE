@@ -103,7 +103,7 @@ export class VaccineAppoimentsService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<VaccineAppointment>;
         }
 
-        const { pageNum, pageSize, query, eventId, studentId, checkBy, schoolYear } = params;
+        const { pageNum, pageSize, query, eventId, studentId, checkBy, schoolYear, status } = params;
         const filters: any = { isDeleted: false };
         if (query?.trim()) {
             filters.bloodPressure = { $regex: query, $options: 'i' };
@@ -112,6 +112,9 @@ export class VaccineAppoimentsService implements OnModuleInit {
         if (studentId?.trim()) filters.studentId = studentId;
         if (checkBy?.trim()) filters.checkedBy = checkBy;
         if (schoolYear?.trim()) filters.schoolYear = schoolYear;
+        if (status?.trim()) {
+            filters.status = status.trim();
+        }
 
         const totalItems = await this.vaccineAppointmentModel.countDocuments(filters);
         const items = await this.vaccineAppointmentModel

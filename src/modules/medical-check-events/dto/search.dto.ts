@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { PaginationRequestModel } from 'src/common/models';
 
@@ -26,4 +26,9 @@ export class SearchMedicalCheckEventDTO extends PaginationRequestModel {
         example: '2024-2025'
     })
     schoolYear?: string;
+
+    @IsOptional()
+    @IsString()
+    @ApiPropertyOptional({ description: 'Trạng thái đăng ký', enum: ['ongoing', 'completed', 'cancelled'] })
+    status?: string;
 }

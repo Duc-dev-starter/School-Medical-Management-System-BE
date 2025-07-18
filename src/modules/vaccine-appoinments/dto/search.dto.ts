@@ -36,4 +36,9 @@ export class SearchVaccineAppointmentDTO extends PaginationRequestModel {
     @ApiProperty({ description: 'Tìm theo ID y tá', required: false })
     checkBy?: string;
 
+    @ApiPropertyOptional({ description: 'Trạng thái sự kiện', enum: ['pending', 'checked', 'cancelled', "ineligible", 'vaccinated'], default: 'pending' })
+    @IsOptional()
+    @IsString()
+    status?: 'pending' | 'checked' | 'cancelled' | "ineligible" | 'vaccinated';
+
 }

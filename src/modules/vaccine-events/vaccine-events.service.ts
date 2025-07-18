@@ -199,10 +199,13 @@ export class VaccineEventServices implements OnModuleInit {
             return cached as SearchPaginationResponseModel<VaccineEvent>;
         }
 
-        const { pageNum, pageSize, query, schoolYear, gradeId } = params;
+        const { pageNum, pageSize, query, schoolYear, gradeId, status } = params;
         const filters: any = { isDeleted: false };
         if (query?.trim()) {
             filters.title = { $regex: query, $options: 'i' };
+        }
+        if (status?.trim()) {
+            filters.status = status.trim();
         }
         if (gradeId?.trim()) filters.gradeId = gradeId;
         if (schoolYear?.trim()) filters.schoolYear = schoolYear;

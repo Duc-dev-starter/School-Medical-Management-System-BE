@@ -177,12 +177,21 @@ export class MedicalCheckEventsService {
             return cached;
         }
 
-        const { pageNum, pageSize, query, studentId, gradeId, schoolYear } = params;
+        const { pageNum, pageSize, query, studentId, gradeId, schoolYear, status } = params;
         const filters: any = { isDeleted: false };
 
         if (query?.trim()) filters.eventName = { $regex: query.trim(), $options: 'i' };
         if (studentId?.trim()) filters.studentId = studentId.trim();
-        if (gradeId?.trim()) filters.gradeId = gradeId.trim();
+        if (status?.trim()) {
+            filters.status = status.trim();
+        }
+        if (gradeId?.trim()) {
+            if (Types.ObjectId.isValid(gradeId)) {
+                filters.gradeId = new Types.ObjectId(gradeId.trim());
+            } else {
+                throw new Error('Invalid gradeId');
+            }
+        }
         if (schoolYear?.trim()) filters.schoolYear = schoolYear.trim();
 
         const totalItems = await this.medicalCheckEventModel.countDocuments(filters);

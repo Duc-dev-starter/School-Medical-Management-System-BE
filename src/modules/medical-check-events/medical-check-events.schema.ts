@@ -28,6 +28,9 @@ export class MedicalCheckEvent {
 
     @Prop({ required: true })
     schoolYear: string;
+
+    @Prop({ default: 'ongoing', enum: ['ongoing', 'completed', 'cancelled'] })
+    status: string;
 }
 
 export const MedicalCheckEventSchema = SchemaFactory.createForClass(MedicalCheckEvent);

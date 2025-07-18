@@ -82,11 +82,14 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
             return cached;
         }
 
-        const { pageNum, pageSize, query, checkedBy, eventId, schoolYear, studentId } = params;
+        const { pageNum, pageSize, query, checkedBy, eventId, schoolYear, studentId, status } = params;
         const filters: any = { isDeleted: false };
 
         if (query?.trim()) {
             filters.eventName = { $regex: query, $options: 'i' };
+        }
+        if (status?.trim()) {
+            filters.status = status.trim();
         }
 
         if (schoolYear?.trim()) filters.schoolYear = schoolYear.trim();

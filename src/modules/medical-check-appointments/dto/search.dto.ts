@@ -36,5 +36,10 @@ export class SearchMedicalCheckAppointmentDTO extends PaginationRequestModel {
         example: '2024-2025'
     })
     schoolYear?: string;
+
+    @ApiPropertyOptional({ description: 'Trạng thái sự kiện', enum: ['pending', 'checked', 'cancelled', "ineligible", 'medicalChecked'], default: 'pending' })
+    @IsOptional()
+    @IsString()
+    status?: 'pending' | 'checked' | 'cancelled' | "ineligible" | 'medicalChecked';
 }
 

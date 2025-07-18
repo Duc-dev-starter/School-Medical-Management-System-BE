@@ -24,4 +24,13 @@ export class SearchVaccineEventDTO extends PaginationRequestModel {
     @IsString()
     @ApiProperty({ description: 'Tìm theo ID khối', required: false })
     gradeId?: string;
+
+    @IsOptional()
+    @IsString()
+    @ApiProperty({
+        description: 'Trạng thái sự kiện (pending, active, completed)',
+        required: false,
+        enum: ['pending', 'active', 'completed'],
+    })
+    status?: string;
 }

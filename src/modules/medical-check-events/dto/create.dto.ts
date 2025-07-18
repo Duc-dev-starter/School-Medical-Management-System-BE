@@ -42,4 +42,9 @@ export class CreateMedicalCheckEventDTO {
     @IsNotEmpty()
     @IsString()
     schoolYear: string;
+
+    @ApiPropertyOptional({ description: 'Trạng thái sự kiện', enum: ['ongoing', 'completed', 'cancelled'], default: 'ongoing' })
+    @IsOptional()
+    @IsString()
+    status?: 'ongoing' | 'completed' | 'cancelled';
 }
