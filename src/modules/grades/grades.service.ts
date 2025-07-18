@@ -70,7 +70,7 @@ export class GradesService implements OnModuleInit {
             .setOptions({ strictPopulate: false })
             .populate({
                 path: 'classes',
-                select: '_id name isDeleted studentIds',
+                select: '_id name isDeleted studentIds schoolYear',
             })
             .lean() as any;
 
@@ -82,6 +82,7 @@ export class GradesService implements OnModuleInit {
             _id: cls._id,
             name: cls.name,
             isDeleted: cls.isDeleted,
+            schoolYear: cls.schoolYear,
             totalStudents: Array.isArray(cls.studentIds) ? cls.studentIds.length : 0,
         }));
 
