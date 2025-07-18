@@ -19,7 +19,7 @@ export class SlotStatus {
 }
 export const SlotStatusSchema = SchemaFactory.createForClass(SlotStatus);
 
-@Schema({ timestamps: true })
+@Schema({ _id: true })
 export class MedicineSubmissionDetail {
     @Prop({ required: true })
     name: string;
