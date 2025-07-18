@@ -160,6 +160,7 @@ export class MedicalCheckEventsService {
                         studentId: student._id,
                         eventId: savedEvent._id,
                         status: 'pending',
+                        schoolYear: payload.schoolYear,
                     });
                 }
             }
