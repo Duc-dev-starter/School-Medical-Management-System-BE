@@ -252,6 +252,28 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         }
         if (dto.status === RegistrationStatus.Cancelled) {
             reg.cancellationReason = dto.cancellationReason;
+
+            const student = await this.studentModel.findById(reg.studentId)
+                .populate('parents.userId')
+                .lean() as any;
+            const event = await this.vaccineEventModel.findById(reg.eventId).lean();
+
+            if (student && Array.isArray(student.parents) && event) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId;
+                    if (parent?.email) {
+                        const subject = `Nhà trường thông báo hủy đơn đăng ký vaccine`;
+                        const html = `
+                        <div>
+                          <h3>Đơn đăng ký tiêm vaccine cho học sinh ${student.fullName} đã bị hủy.</h3>
+                          <p>Sự kiện: ${event.title || event.vaccineName}</p>
+                          <p>Lý do: ${dto.cancellationReason}</p>
+                          <p>Nhà trường xin lỗi vì sự bất tiện này.</p>
+                        </div>`;
+                        await this.mailQueue.add('send-vaccine-mail', { to: parent.email, subject, html });
+                    }
+                }
+            }
         }
 
         await reg.save();

@@ -176,6 +176,8 @@ export class MedicalCheckRegistrationsService {
         }
 
         reg.status = dto.status;
+
+        // ===== Approved =====
         if (dto.status === RegistrationStatus.Approved) {
             reg.approvedAt = new Date();
             reg.cancellationReason = undefined;
@@ -187,7 +189,6 @@ export class MedicalCheckRegistrationsService {
                 isDeleted: false,
             });
 
-            // Lấy student và gửi mail cho từng phụ huynh
             const student = await this.studentModel.findById(reg.studentId)
                 .populate('parents.userId')
                 .lean();
@@ -195,29 +196,60 @@ export class MedicalCheckRegistrationsService {
 
             if (student && Array.isArray(student.parents) && event) {
                 for (const parentInfo of student.parents) {
-                    const parent = parentInfo.userId;
-                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                    const parent = parentInfo.userId as any;
+                    if (parent?.email) {
                         const subject = 'Xác nhận đăng ký khám sức khỏe thành công';
-                        const html = `...`; // như trên
-                        await this.mailQueue.add('send-medical-check-mail', {
-                            to: parent.email,
-                            subject,
-                            html,
-                        });
+                        const html = `
+                        <div style="font-family: Arial, sans-serif;">
+                          <h2>Đơn khám sức khỏe đã được duyệt!</h2>
+                          <p>Học sinh: <b>${student.fullName}</b></p>
+                          <p>Sự kiện: <b>${event.eventName}</b></p>
+                          <p>Vui lòng đến đúng giờ.</p>
+                        </div>
+                    `;
+                        await this.mailQueue.add('send-medical-check-mail', { to: parent.email, subject, html });
                     }
                 }
             }
         }
+
+        // ===== Rejected =====
         if (dto.status === RegistrationStatus.Rejected) {
             reg.cancellationReason = dto.cancellationReason;
         }
+
+        // ===== Cancelled =====
         if (dto.status === RegistrationStatus.Cancelled) {
-            reg.cancellationReason = dto.cancellationReason;
+            reg.cancellationReason = dto.cancellationReason || 'Sự kiện đã bị nhà trường hủy';
+
+            const student = await this.studentModel.findById(reg.studentId)
+                .populate('parents.userId')
+                .lean();
+            const event = await this.medicalCheckEventModel.findById(reg.eventId).lean();
+
+            if (student && Array.isArray(student.parents) && event) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId as any;
+                    if (parent?.email) {
+                        const subject = 'Thông báo hủy đăng ký khám sức khỏe';
+                        const html = `
+                        <div style="font-family: Arial, sans-serif;">
+                          <h2>Đơn đăng ký khám sức khỏe bị hủy</h2>
+                          <p>Học sinh: <b>${student.fullName}</b></p>
+                          <p>Sự kiện: <b>${event.eventName}</b></p>
+                          <p>Lý do: <b>${reg.cancellationReason}</b></p>
+                        </div>
+                    `;
+                        await this.mailQueue.add('send-medical-check-mail', { to: parent.email, subject, html });
+                    }
+                }
+            }
         }
 
         await reg.save();
         return reg;
     }
+
 
     async exportExcel(params: SearchMedicalCheckRegistrationDTO, res: Response) {
         const { query, eventId, status, studentId } = params;
