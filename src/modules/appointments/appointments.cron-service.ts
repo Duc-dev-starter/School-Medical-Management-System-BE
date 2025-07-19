@@ -61,10 +61,11 @@ export class ParentNurseAppointmentCronService {
   </p>
 </div>
 `;
-        // Nếu dùng queue
-        // await this.mailQueue.add('send-cancel-appointment-mail', { to: parent.email, subject, html });
-        // Nếu dùng service trực tiếp
-        // await this.mailService.sendMail({ to: parent.email, subject, html });
+        await this.mailQueue.add('send-vaccine-mail', {
+          to: parent.email,
+          subject,
+          html,
+        });
       }
     }
 

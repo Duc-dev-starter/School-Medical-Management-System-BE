@@ -207,7 +207,7 @@ export class MedicalCheckRegistrationsService {
                           <p>Vui lòng đến đúng giờ.</p>
                         </div>
                     `;
-                        await this.mailQueue.add('send-medical-check-mail', { to: parent.email, subject, html });
+                        await this.mailQueue.add('send-vaccine-mail', { to: parent.email, subject, html });
                     }
                 }
             }
@@ -240,7 +240,7 @@ export class MedicalCheckRegistrationsService {
                           <p>Lý do: <b>${reg.cancellationReason}</b></p>
                         </div>
                     `;
-                        await this.mailQueue.add('send-medical-check-mail', { to: parent.email, subject, html });
+                        await this.mailQueue.add('send-vaccine-mail', { to: parent.email, subject, html });
                     }
                 }
             }

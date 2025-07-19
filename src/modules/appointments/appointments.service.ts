@@ -206,7 +206,7 @@ export class AppointmentService {
             // Ví dụ: Gửi mail thông báo duyệt thành công nếu muốn
             // const student = await this.studentModel.findById(appointment.studentId).populate('parents.userId').lean();
             // const parent = ... (lấy parent info)
-            // await this.mailQueue.add('send-appointment-mail', {...});
+            // await this.mailQueue.add('send-vaccine-mail', {...});
 
             if (dto.schoolNurseId) {
                 appointment.schoolNurseId = new Types.ObjectId(dto.schoolNurseId);
