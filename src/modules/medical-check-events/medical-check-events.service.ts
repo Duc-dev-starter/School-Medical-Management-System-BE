@@ -154,17 +154,23 @@ export class MedicalCheckEventsService {
         for (const student of students) {
             if (Array.isArray(student.parents)) {
                 for (const parentInfo of student.parents) {
-                    const parent = parentInfo.userId;
-                    await this.medicalCheckRegistrationModel.create({
-                        parentId: parent._id,
-                        studentId: student._id,
-                        eventId: savedEvent._id,
-                        status: 'pending',
-                        schoolYear: payload.schoolYear,
-                    });
+                    const parent = parentInfo.userId as any;
+                    if (parent && parent._id) {  // Kiểm tra parent khác null
+                        await this.medicalCheckRegistrationModel.create({
+                            parentId: parent._id,
+                            studentId: student._id,
+                            eventId: savedEvent._id,
+                            status: 'pending',
+                            schoolYear: payload.schoolYear,
+                        });
+                    } else {
+                        // Có thể log lại lỗi để debug
+                        console.warn(`Parent not found for student ${student._id}`);
+                    }
                 }
             }
         }
+
 
         return savedEvent;
     }

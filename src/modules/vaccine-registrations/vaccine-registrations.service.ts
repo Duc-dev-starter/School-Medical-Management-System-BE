@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { VaccineRegistration, VaccineRegistrationDocument } from './vaccine-registrations.schema';
@@ -128,7 +128,14 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         }
         if (eventId?.trim()) filters.eventId = eventId;
         if (parentId?.trim()) filters.parentId = parentId;
-        if (studentId?.trim()) filters.studentId = studentId;
+        if (studentId?.trim()) {
+            if (Types.ObjectId.isValid(studentId)) {
+                filters.gradeId = new Types.ObjectId(studentId.trim());
+            } else {
+                throw new Error('Invalid eventId');
+            }
+        }
+
 
         const totalItems = await this.vaccineRegistrationModel.countDocuments(filters);
         const items = await this.vaccineRegistrationModel
