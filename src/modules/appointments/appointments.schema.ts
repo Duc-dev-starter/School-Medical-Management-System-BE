@@ -37,6 +37,9 @@ export class ParentNurseAppointment {
 
     @Prop({ required: false })
     parentArrivalTime?: Date;
+
+    @Prop({ default: false })
+    isRemindedBeforeAppointment?: boolean;
 }
 
 export const ParentNurseAppointmentSchema = SchemaFactory.createForClass(ParentNurseAppointment);

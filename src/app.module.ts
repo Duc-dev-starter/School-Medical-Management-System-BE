@@ -33,6 +33,7 @@ import { MailModule } from './common/modules/mail.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import * as redisStore from 'cache-manager-redis-store';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
 
 
 
@@ -58,6 +59,7 @@ import * as redisStore from 'cache-manager-redis-store';
     MedicalCheckRegistrationsModule,
     MedicalCheckAppointmentsModule,
     AppointmentsModule,
+    ChatbotModule,
     MailModule,
     CacheModule.register({
       store: redisStore as any,
