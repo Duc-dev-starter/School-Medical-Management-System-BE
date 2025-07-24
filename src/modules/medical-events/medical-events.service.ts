@@ -87,10 +87,10 @@ export class MedicalEventsService implements OnModuleInit {
   async create(payload: CreateMedicalEventDto, user: IUser): Promise<MedicalEvent> {
     let medicines = [];
     let medicalSupplies = [];
-    const exists = await this.medicalEventModel.findOne({ eventName: payload.eventName, isDeleted: false });
-    if (exists) {
-      throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');
-    }
+    // const exists = await this.medicalEventModel.findOne({ eventName: payload.eventName, isDeleted: false });
+    // if (exists) {
+    //   throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');
+    // }
 
     const student = await this.studentModel.findOne({ _id: payload.studentId, isDeleted: false });
     if (!student) throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Học sinh không tồn tại');
