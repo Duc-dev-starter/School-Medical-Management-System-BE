@@ -52,7 +52,7 @@ VaccineRegistrationSchema.virtual('student', {
 });
 
 VaccineRegistrationSchema.virtual('event', {
-    ref: 'MedicalCheckEvent',
+    ref: 'VaccineEvent',
     localField: 'eventId',
     foreignField: '_id',
     justOne: true
