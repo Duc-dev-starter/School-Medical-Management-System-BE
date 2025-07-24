@@ -186,7 +186,10 @@ export class MedicalCheckEventsService {
         const { pageNum, pageSize, query, studentId, gradeId, schoolYear, status } = params;
         const filters: any = { isDeleted: false };
 
-        if (query?.trim()) filters.eventName = { $regex: query.trim(), $options: 'i' };
+        if (query?.trim()) {
+            filters.title = { $regex: query, $options: 'i' };
+            filters.provider = { $regex: query, $options: 'i' };
+        }
         if (studentId?.trim()) filters.studentId = studentId.trim();
         if (status?.trim()) {
             filters.status = status.trim();

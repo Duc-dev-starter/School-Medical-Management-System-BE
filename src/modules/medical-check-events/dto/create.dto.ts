@@ -22,6 +22,11 @@ export class CreateMedicalCheckEventDTO {
     @IsString()
     location: string;
 
+    @ApiProperty({ example: 'Bệnh viện XYZ', description: 'Đơn vị cung cấp vaccine' })
+    @IsNotEmpty()
+    @IsString()
+    provider: string;
+
     @ApiProperty({ example: '2025-09-01T08:00:00.000Z', description: 'Ngày bắt đầu sự kiện (ISO format)' })
     @IsNotEmpty()
     @IsDateString()

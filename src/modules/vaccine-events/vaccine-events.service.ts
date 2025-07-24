@@ -203,6 +203,7 @@ export class VaccineEventServices implements OnModuleInit {
         const filters: any = { isDeleted: false };
         if (query?.trim()) {
             filters.title = { $regex: query, $options: 'i' };
+            filters.provider = { $regex: query, $options: 'i' };
         }
         if (status?.trim()) {
             filters.status = status.trim();

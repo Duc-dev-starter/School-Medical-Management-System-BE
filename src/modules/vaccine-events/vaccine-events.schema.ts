@@ -27,6 +27,9 @@ export class VaccineEvent {
     location: string;
 
     @Prop({ required: true })
+    provider: string;
+
+    @Prop({ required: true })
     startRegistrationDate: Date;
 
     @Prop({ required: true })

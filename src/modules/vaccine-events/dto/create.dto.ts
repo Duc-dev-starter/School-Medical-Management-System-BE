@@ -38,6 +38,11 @@ export class CreateVaccineEventDTO {
     @IsDateString()
     endRegistrationDate: Date;
 
+    @ApiProperty({ example: 'Bệnh viện XYZ', description: 'Đơn vị cung cấp vaccine' })
+    @IsNotEmpty()
+    @IsString()
+    provider: string;
+
     @ApiProperty({ description: 'Thời gian sự kiện', example: '2025-09-01T08:00:00.000Z' })
     @IsNotEmpty()
     @IsDateString()

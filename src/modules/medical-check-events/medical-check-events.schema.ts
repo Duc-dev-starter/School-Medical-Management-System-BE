@@ -27,6 +27,9 @@ export class MedicalCheckEvent {
     eventDate: Date;
 
     @Prop({ required: true })
+    provider: string;
+
+    @Prop({ required: true })
     schoolYear: string;
 
     @Prop({ default: 'ongoing', enum: ['ongoing', 'completed', 'cancelled'] })
