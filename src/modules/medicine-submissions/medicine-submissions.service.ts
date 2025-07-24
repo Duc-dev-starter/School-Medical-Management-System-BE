@@ -297,10 +297,12 @@ export class MedicineSubmissionsService implements OnModuleInit {
 
         if (!detail) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy loại thuốc');
 
-        // Tìm đúng slotStatus theo ISO date
-        const slot = detail.slotStatus.find(
-            s => new Date(s.time).toISOString() === new Date(data.time).toISOString()
-        );
+        const inputTime = new Date(data.time);
+        const slot = detail.slotStatus.find((s) => {
+            const slotTime = new Date(s.time);
+            const diffMs = Math.abs(slotTime.getTime() - inputTime.getTime());
+            return diffMs <= 10 * 60 * 1000; // 10 phút (600 000 ms)
+        });
         if (!slot) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy khung giờ uống thuốc');
 
         if (data.status === 'compensated' && !data.note) {

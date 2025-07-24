@@ -25,12 +25,10 @@ export class MedicineSubmissionCronService {
             let changed = false;
             for (const med of sub.medicines) {
                 for (const slot of med.slotStatus) {
-                    // Nếu slot time là dạng Date
-                    // const slotTime = new Date(slot.time);
-                    // Nếu slot time là "HH:mm", bạn cần convert sang giờ hôm nay, hoặc tốt nhất lưu ISO DateTime khi tạo slot
                     if (slot.status === 'pending') {
-                        // Nếu slot.time là dạng Date string:
-                        if (new Date(slot.time) < now) {
+                        const slotTime = new Date(slot.time);
+                        // Nếu slotTime + 10 phút vẫn < now => missed
+                        if (slotTime.getTime() + 10 * 60 * 1000 < now.getTime()) {
                             slot.status = 'missed';
                             slot.note = `Tự động chuyển missed lúc ${now.toISOString()}`;
                             changed = true;
