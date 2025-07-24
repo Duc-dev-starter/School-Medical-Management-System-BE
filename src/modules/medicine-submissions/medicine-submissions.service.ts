@@ -122,9 +122,9 @@ export class MedicineSubmissionsService implements OnModuleInit {
                 },
                 {
                     path: 'studentId',
-                    select: 'fullName gender dob studentCode classId',
+                    select: 'fullName gender dob studentCode classId studentIdCode',
                     populate: {
-                        path: 'classId', // Fixed from 'class' to 'classId' to match schema
+                        path: 'classId',
                         select: 'name schoolYear',
                     },
                 },
