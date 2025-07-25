@@ -24,6 +24,7 @@ import { Student } from './students.schema';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
+import { UnlinkParentDTO } from './dto/unlink.dto';
 
 @ApiTags('Students')
 @Controller('api/students')
@@ -96,5 +97,18 @@ export class StudentsController {
     @UseInterceptors(FileInterceptor('file'))
     async importExcel(@UploadedFile() file: Multer.File) {
         return this.studentService.importStudentsFromExcel(file.buffer);
+    }
+
+    @Post('admin/unlink-parent/:studentId')
+    @ApiOperation({ summary: 'Admin gỡ parent khỏi học sinh' })
+    @ApiParam({ name: 'studentId', description: 'ID học sinh' })
+    @ApiBody({ type: UnlinkParentDTO })
+    async unlinkParent(
+        @Param('studentId') studentId: string,
+        @Body() body: UnlinkParentDTO
+    ) {
+        let result;
+        result = await this.studentService.unlinkParent(studentId, body.parentType);
+        return formatResponse(result);
     }
 }

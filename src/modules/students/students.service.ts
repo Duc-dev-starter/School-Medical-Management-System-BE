@@ -391,4 +391,15 @@ export class StudentsService implements OnModuleInit {
 
         return { inserted: studentsToInsert.length };
     }
+
+    async unlinkParent(studentId: string, parentType: 'father' | 'mother' | 'guardian'): Promise<Student> {
+        const student = await this.studentModel.findOne({ _id: studentId, isDeleted: false });
+        if (!student) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
+
+        // Lọc bỏ parent với type cần gỡ
+        student.parents = (student.parents || []).filter(p => p.type !== parentType);
+
+        await student.save();
+        return student;
+    }
 }
