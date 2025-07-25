@@ -120,7 +120,9 @@ export class AppointmentService {
             filters.parentId = new Types.ObjectId(parentId);
         }
         if (studentId) filters.studentId = studentId;
-        if (schoolNurseId) filters.schoolNurseId = schoolNurseId;
+        if (schoolNurseId && Types.ObjectId.isValid(schoolNurseId)) {
+            filters.schoolNurseId = new Types.ObjectId(schoolNurseId);
+        }
         if (status) filters.status = status;
         if (type) filters.type = type;
 

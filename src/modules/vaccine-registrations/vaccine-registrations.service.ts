@@ -63,12 +63,26 @@ export class VaccineRegistrationsServices implements OnModuleInit {
     }
 
     async create(payload: CreateVaccineRegistrationDTO): Promise<VaccineRegistration> {
-        const existing = await this.vaccineRegistrationModel.findOne({ parentId: payload.parentId, isDeleted: false, schoolYear: payload.schoolYear, eventId: payload.eventId, studentId: payload.studentId });
+        const existing = await this.vaccineRegistrationModel.findOne({
+            parentId: payload.parentId,
+            isDeleted: false,
+            schoolYear: payload.schoolYear,
+            eventId: payload.eventId,
+            studentId: payload.studentId
+        });
+
         if (existing) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Đơn đăng kí của phụ huynh này đã tồn tại');
         }
 
-        const item = new this.vaccineRegistrationModel(payload);
+        const dataToSave = {
+            ...payload,
+            parentId: new Types.ObjectId(payload.parentId),
+            studentId: new Types.ObjectId(payload.studentId),
+            eventId: new Types.ObjectId(payload.eventId),
+        };
+
+        const item = new this.vaccineRegistrationModel(dataToSave);
         return await item.save();
     }
 
@@ -87,7 +101,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
             .populate('student')
             .populate('event');
         if (!item) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn');
         }
 
         await this.cacheManager.set(cacheKey, item, 60);

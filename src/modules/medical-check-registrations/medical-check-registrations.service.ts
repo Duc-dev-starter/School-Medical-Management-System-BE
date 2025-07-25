@@ -73,11 +73,26 @@ export class MedicalCheckRegistrationsService {
     }
 
     async create(payload: CreateMedicalCheckRegistrationDTO, user: IUser): Promise<MedicalCheckRegistration> {
-        const exists = await this.medicalCheckregistrationModel.findOne({ parentId: payload.parentId, isDeleted: false, schoolYear: payload.schoolYear, studentId: payload.studentId, eventId: payload.eventId });
+        const exists = await this.medicalCheckregistrationModel.findOne({
+            parentId: payload.parentId,
+            isDeleted: false,
+            schoolYear: payload.schoolYear,
+            studentId: payload.studentId,
+            eventId: payload.eventId
+        });
+
         if (exists) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Đơn đăng kí đã tồn tại');
         }
-        return this.medicalCheckregistrationModel.create(payload);
+
+        const dataToSave = {
+            ...payload,
+            parentId: new Types.ObjectId(payload.parentId),
+            studentId: new Types.ObjectId(payload.studentId),
+            eventId: new Types.ObjectId(payload.eventId),
+        };
+
+        return this.medicalCheckregistrationModel.create(dataToSave);
     }
 
     async findAll(params: SearchMedicalCheckRegistrationDTO) {
@@ -198,7 +213,7 @@ export class MedicalCheckRegistrationsService {
             if (student && Array.isArray(student.parents) && event) {
                 for (const parentInfo of student.parents) {
                     const parent = parentInfo.userId as any;
-                    if (parent?.email) {
+                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
                         const subject = 'Xác nhận đăng ký khám sức khỏe thành công';
                         const html = `
                         <div style="font-family: Arial, sans-serif;">
@@ -246,7 +261,10 @@ export class MedicalCheckRegistrationsService {
                 }
             }
         }
-
+        console.log('Trước khi lưu:', reg);
+        if (!reg.parentId) {
+            throw new Error('parentId bị thiếu trong bản ghi MedicalCheckRegistration');
+        }
         await reg.save();
         return reg;
     }
