@@ -80,8 +80,13 @@ export class StudentsService implements OnModuleInit {
         const randomSuffix = randomBytes(4).toString('hex');
         const studentIdCode = `${existingClass.name}-${randomSuffix}`;
 
+        const cleanParents = (payload.parents || []).filter(
+            (p) => !!p.type && !!p.email && p.email.trim() !== ''
+        );
+
         const item = new this.studentModel({
             ...payload,
+            parents: cleanParents,
             studentCode,
             studentIdCode,
             classId: new Types.ObjectId(payload.classId),
@@ -142,14 +147,16 @@ export class StudentsService implements OnModuleInit {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
         }
 
-        item.parentInfos = (item.parents || []).map((p: any) => ({
-            type: p.type,
-            _id: p.userId?._id || p.userId,
-            fullName: p.userId?.fullName || '',
-            phone: p.userId?.phone || '',
-            email: p.userId?.email || '',
-            role: p.userId?.role || '',
-        }));
+        item.parentInfos = (item.parents || [])
+            .filter((p: any) => p.userId || p.email)
+            .map((p: any) => ({
+                type: p.type,
+                _id: p.userId?._id || p.userId,
+                fullName: p.userId?.fullName || '',
+                phone: p.userId?.phone || '',
+                email: p.userId?.email || '',
+                role: p.userId?.role || '',
+            }));
 
         if (item.classId && typeof item.classId === 'object') {
             item.classInfo = {

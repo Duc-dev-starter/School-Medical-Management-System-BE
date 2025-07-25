@@ -97,7 +97,7 @@ export class UsersService {
           throw new CustomHttpException(HttpStatus.CONFLICT, `Học sinh ${student.fullName} đã đủ phụ huynh`);
         }
         // Kiểm tra trùng type chưa
-        if (student.parents.some((p) => p.type === type)) {
+        if (student.parents.some((p) => p.type === type && p.userId)) {
           throw new CustomHttpException(HttpStatus.CONFLICT, `Học sinh ${student.fullName} đã có liên kết với ${type === 'father' ? 'ba' : type === 'mother' ? 'mẹ' : 'giám hộ'}`);
         }
         // Thêm phụ huynh vào students
