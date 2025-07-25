@@ -48,17 +48,12 @@ export class MedicinesService implements OnModuleInit {
     }
 
     async create(payload: CreateMedicineDTO): Promise<Medicine> {
-        const { description, dosage, name, sideEffects } = payload;
-        const existing = await this.medicineModel.findOne({ name, isDeleted: false });
+        const existing = await this.medicineModel.findOne({ name: payload.name, isDeleted: false });
         if (existing) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Thuốc đã tồn tại');
         }
-        const newMedicine = new this.medicineModel({
-            name,
-            description,
-            dosage,
-            sideEffects,
-        });
+
+        const newMedicine = new this.medicineModel(payload);
         try {
             await newMedicine.save();
         } catch (error) {
@@ -73,6 +68,7 @@ export class MedicinesService implements OnModuleInit {
         }
         return newMedicine;
     }
+
 
     async findOne(id: string): Promise<Medicine> {
         if (!id) {

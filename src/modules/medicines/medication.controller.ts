@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Delete, Put, Query } from '@nestjs/common';
 import { CreateMedicineDTO, SearchMedicinesDTO, UpdateMedicineDTO } from './dto';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MedicinesService } from './medicines.service';
 import { Medicine } from './medicines.schema';
 import { formatResponse } from 'src/utils';
@@ -13,6 +13,7 @@ export class MedicinesController {
   constructor(private readonly medicinesService: MedicinesService) { }
 
   @Post()
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Tạo thuốc mới' })
   @ApiBody({ type: CreateMedicineDTO })
   @ApiResponse({ status: 201, type: Medicine })
@@ -44,6 +45,7 @@ export class MedicinesController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Cập nhật thuốc' })
+  @ApiBearerAuth()
   @ApiParam({ name: 'id' })
   @ApiBody({ type: UpdateMedicineDTO })
   @ApiResponse({ status: 200, type: Medicine })
@@ -53,6 +55,7 @@ export class MedicinesController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Xóa thuốc' })
   @ApiParam({ name: 'id', description: 'ID của thuốc cần xóa' })
   @ApiResponse({ status: 200, description: 'Trả về true nếu xóa thành công', type: Boolean })
@@ -61,6 +64,7 @@ export class MedicinesController {
   }
 
   @Post(':id/import')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Nhập thêm số lượng cho thuốc' })
   @ApiParam({ name: 'id', description: 'ID thuốc' })
   @ApiBody({ type: ImportMedicineQuantityDTO })

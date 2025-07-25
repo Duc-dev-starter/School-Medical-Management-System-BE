@@ -87,6 +87,7 @@ export class MedicalSuppliesController {
     }
 
     @Post(':id/import')
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Nhập thêm số lượng cho vật tư' })
     @ApiParam({ name: 'id', description: 'ID vật tư' })
     @ApiBody({ type: ImportMedicalSupplyQuantityDTO })
