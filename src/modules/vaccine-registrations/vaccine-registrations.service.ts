@@ -126,7 +126,13 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         if (status?.trim()) {
             filters.status = status.trim();
         }
-        if (eventId?.trim()) filters.eventId = eventId;
+        if (eventId?.trim()) {
+            if (Types.ObjectId.isValid(eventId)) {
+                filters.gradeId = new Types.ObjectId(eventId.trim());
+            } else {
+                throw new Error('Invalid eventId');
+            }
+        }
         if (parentId?.trim()) filters.parentId = parentId;
         if (studentId?.trim()) {
             if (Types.ObjectId.isValid(studentId)) {
