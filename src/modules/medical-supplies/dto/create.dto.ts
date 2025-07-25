@@ -31,4 +31,14 @@ export class CreateMedicalSupplyDTO {
     @IsOptional()
     @IsString()
     supplier?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    manufacturer?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsDateString()
+    manufactureDate?: string;
 }

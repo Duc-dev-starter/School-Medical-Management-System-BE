@@ -26,6 +26,7 @@ import { AppointmentStatus, Role } from 'src/common/enums';
 import { IUser } from '../users/users.interface';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { UpdatePostMedicalCheckDTO } from './dto/checkMedicalCheck.dto';
 
 @Injectable()
 export class MedicalCheckAppointmentsService implements OnModuleInit {
@@ -208,4 +209,23 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
         await appo.save();
         return appo;
     }
+
+    async updatePostMedicalCheckStatus(
+        id: string,
+        dto: UpdatePostMedicalCheckDTO
+    ) {
+        const appo = await this.medicalCheckAppointmentModel.findOne({ _id: id, isDeleted: false });
+        if (!appo) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn khám');
+
+        if (appo.status !== AppointmentStatus.MedicalChecked) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ cập nhật khi học sinh đã được khám');
+        }
+
+        appo.postMedicalCheckStatus = dto.postMedicalCheckStatus;
+        appo.postMedicalCheckNotes = dto.postMedicalCheckNotes;
+        await appo.save();
+
+        return appo;
+    }
+
 }

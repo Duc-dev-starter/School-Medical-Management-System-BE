@@ -152,4 +152,17 @@ export class MedicinesService implements OnModuleInit {
         await this.medicineModel.findByIdAndUpdate(id, { isDeleted: true });
         return true;
     }
+
+    async importQuantity(id: string, addQuantity: number): Promise<Medicine> {
+        if (!id || typeof addQuantity !== 'number' || addQuantity <= 0) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Dữ liệu không hợp lệ');
+        }
+        const medicine = await this.medicineModel.findOne({ _id: id, isDeleted: false });
+        if (!medicine) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy thuốc');
+        }
+        medicine.quantity = (medicine.quantity || 0) + addQuantity;
+        await medicine.save();
+        return medicine;
+    }
 }

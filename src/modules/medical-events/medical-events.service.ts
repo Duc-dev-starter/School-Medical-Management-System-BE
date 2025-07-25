@@ -108,23 +108,36 @@ export class MedicalEventsService implements OnModuleInit {
       ? new Types.ObjectId(parentInfo.userId)
       : parentInfo.userId;
     const parent = await this.userModel.findOne({ _id: parentId, isDeleted: false });
+    if (payload.medicinesUsed?.length) {
+      for (const { medicineId, quantity } of payload.medicinesUsed) {
+        const medicine = await this.medicineModel.findOne({ _id: medicineId, isDeleted: false });
+        if (!medicine) throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Thuốc ID ${medicineId} không tồn tại`);
+        if (medicine.quantity < quantity) {
+          throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Thuốc ${medicine.name} không đủ số lượng`);
+        }
 
-    if (payload.medicinesId?.length) {
-      const medicineIds = payload.medicinesId.filter(id => id && isValidObjectId(id));
-      const medicines = await this.medicineModel.find({ _id: { $in: medicineIds }, isDeleted: false });
-      if (medicines.length !== medicineIds.length) {
-        throw new CustomHttpException(HttpStatus.CONFLICT, 'Có thuốc không tồn tại');
+        await this.medicineModel.updateOne(
+          { _id: medicineId },
+          { $inc: { quantity: -Math.abs(quantity) } }
+        );
+        medicines.push(medicine);
       }
     }
+    if (payload.medicalSuppliesUsed?.length) {
+      for (const { supplyId, quantity } of payload.medicalSuppliesUsed) {
+        const supply = await this.medicalSupplyModel.findOne({ _id: supplyId, isDeleted: false });
+        if (!supply) throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Vật tư ID ${supplyId} không tồn tại`);
+        if (supply.quantity < quantity) {
+          throw new CustomHttpException(HttpStatus.BAD_REQUEST, `Vật tư ${supply.name} không đủ số lượng`);
+        }
 
-    if (payload.medicalSuppliesId?.length) {
-      const supplyIds = payload.medicalSuppliesId.filter(id => id && isValidObjectId(id));
-      const supplies = await this.medicalSupplyModel.find({ _id: { $in: supplyIds }, isDeleted: false });
-      if (supplies.length !== supplyIds.length) {
-        throw new CustomHttpException(HttpStatus.CONFLICT, 'Có vật tư y tế không tồn tại');
+        await this.medicalSupplyModel.updateOne(
+          { _id: supplyId },
+          { $inc: { quantity: -Math.abs(quantity) } }
+        );
+        medicalSupplies.push(supply);
       }
     }
-
     const savedEvent = await this.medicalEventModel.create(payload);
 
     // Gửi mail cho phụ huynh

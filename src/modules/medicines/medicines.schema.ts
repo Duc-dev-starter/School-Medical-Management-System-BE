@@ -17,6 +17,18 @@ export class Medicine {
     @Prop()
     sideEffects: string;
 
+    @Prop()
+    quantity: number;
+
+    @Prop()
+    manufacturer: string; // Thêm trường hãng sản xuất
+
+    @Prop()
+    manufactureDate: Date; // Ngày sản xuất
+
+    @Prop()
+    expiryDate: Date; // Ngày hết hạn
+
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 }

@@ -5,6 +5,7 @@ import { MedicinesService } from './medicines.service';
 import { Medicine } from './medicines.schema';
 import { formatResponse } from 'src/utils';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ImportMedicineQuantityDTO } from './dto/import.dto';
 
 @ApiTags('Medicines')
 @Controller('api/medicines')
@@ -57,5 +58,18 @@ export class MedicinesController {
   @ApiResponse({ status: 200, description: 'Trả về true nếu xóa thành công', type: Boolean })
   async remove(@Param('id') id: string): Promise<boolean> {
     return await this.medicinesService.remove(id);
+  }
+
+  @Post(':id/import')
+  @ApiOperation({ summary: 'Nhập thêm số lượng cho thuốc' })
+  @ApiParam({ name: 'id', description: 'ID thuốc' })
+  @ApiBody({ type: ImportMedicineQuantityDTO })
+  @ApiResponse({ status: 200, type: Medicine })
+  async importQuantity(
+    @Param('id') id: string,
+    @Body() body: ImportMedicineQuantityDTO
+  ) {
+    const result = await this.medicinesService.importQuantity(id, body.addQuantity);
+    return formatResponse(result);
   }
 }

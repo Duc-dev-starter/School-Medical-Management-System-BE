@@ -20,6 +20,7 @@ import { MedicalSuppliesService } from './medical-supplies.service';
 import { CreateMedicalSupplyDTO, SearchMedicalSupplyDTO, UpdateMedicalSupplyDTO } from './dto';
 import { MedicalSupply } from './medical-supplies.schema';
 import { Response } from 'express';
+import { ImportMedicalSupplyQuantityDTO } from './dto/import.dto';
 
 @ApiTags('Medical Supplies')
 @Controller('api/medical-supplies')
@@ -83,5 +84,18 @@ export class MedicalSuppliesController {
     @ApiBearerAuth()
     async exportExcel(@Query() query: SearchMedicalSupplyDTO, @Res() res: Response) {
         await this.medicalSuppliesService.exportExcel(query, res);
+    }
+
+    @Post(':id/import')
+    @ApiOperation({ summary: 'Nhập thêm số lượng cho vật tư' })
+    @ApiParam({ name: 'id', description: 'ID vật tư' })
+    @ApiBody({ type: ImportMedicalSupplyQuantityDTO })
+    @ApiResponse({ status: 200, type: MedicalSupply })
+    async importQuantity(
+        @Param('id') id: string,
+        @Body() body: ImportMedicalSupplyQuantityDTO
+    ) {
+        const result = await this.medicalSuppliesService.importQuantity(id, body.addQuantity);
+        return formatResponse(result);
     }
 }

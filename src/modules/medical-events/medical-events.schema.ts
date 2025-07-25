@@ -28,11 +28,27 @@ export class MedicalEvent {
     @Prop()
     actionTaken: string;
 
-    @Prop({ type: [{ type: Types.ObjectId, ref: Medicine.name }], default: [] })
-    medicinesId: Types.ObjectId[];
+    @Prop({
+        type: [
+            {
+                medicineId: { type: Types.ObjectId, ref: Medicine.name, required: true },
+                quantity: { type: Number, required: true, min: 1 }
+            }
+        ],
+        default: []
+    })
+    medicinesUsed: { medicineId: Types.ObjectId; quantity: number }[];
 
-    @Prop({ type: [{ type: Types.ObjectId, ref: MedicalSupply.name }], default: [] })
-    medicalSuppliesId: Types.ObjectId[];
+    @Prop({
+        type: [
+            {
+                supplyId: { type: Types.ObjectId, ref: MedicalSupply.name, required: true },
+                quantity: { type: Number, required: true, min: 1 }
+            }
+        ],
+        default: []
+    })
+    medicalSuppliesUsed: { supplyId: Types.ObjectId; quantity: number }[];
 
     @Prop({ enum: ['Mild', 'Moderate', 'Severe'], default: 'Mild' })
     severityLevel: string;

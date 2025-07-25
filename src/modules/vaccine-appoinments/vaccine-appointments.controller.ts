@@ -19,6 +19,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { VaccineAppoimentsService } from './vaccine-appointments.service';
 import { CheckVaccineAppointmentDTO, CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
 import { VaccineAppointment } from './vaccine-appoinments.schema';
+import { UpdatePostVaccineDTO } from './dto/checkVaccine.dto';
 
 
 @ApiTags('Vaccine Appointments')
@@ -91,5 +92,18 @@ export class VaccineAppoimentsController {
         @Request() req
     ) {
         return this.vaccineAppointmentService.nurseCheckAppointment(id, req.user, body);
+    }
+
+    @Patch(':id/post-vaccination')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cập nhật tình trạng sức khỏe sau khi tiêm vaccine' })
+    @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy lịch hẹn' })
+    async updatePostVaccination(
+        @Param('id') id: string,
+        @Body() body: UpdatePostVaccineDTO,
+    ) {
+        const updated = await this.vaccineAppointmentService.updatePostVaccinationStatus(id, body);
+        return formatResponse<VaccineAppointment>(updated);
     }
 }

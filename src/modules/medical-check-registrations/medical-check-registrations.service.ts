@@ -184,6 +184,7 @@ export class MedicalCheckRegistrationsService {
 
             await this.medicalCheckAppoinmentModel.create({
                 studentId: reg.studentId,
+                schoolYear: reg.schoolYear,
                 eventId: reg.eventId,
                 status: AppointmentStatus.Pending,
                 isDeleted: false,

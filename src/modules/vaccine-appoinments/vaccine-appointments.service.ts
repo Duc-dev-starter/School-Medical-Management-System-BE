@@ -5,10 +5,11 @@ import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { VaccineAppointment, VaccineAppointmentDocument } from './vaccine-appoinments.schema';
 import { CheckVaccineAppointmentDTO, CreateVaccineAppointmentDTO, SearchVaccineAppointmentDTO, UpdateVaccineAppointment } from './dto';
-import { AppointmentStatus, Role } from 'src/common/enums';
+import { AppointmentStatus, PostVaccinationStatus, Role } from 'src/common/enums';
 import { IUser } from '../users/users.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
+import { UpdatePostVaccineDTO } from './dto/checkVaccine.dto';
 
 @Injectable()
 export class VaccineAppoimentsService implements OnModuleInit {
@@ -188,4 +189,26 @@ export class VaccineAppoimentsService implements OnModuleInit {
         await appo.save();
         return appo;
     }
+
+    async updatePostVaccinationStatus(
+        id: string,
+        body: UpdatePostVaccineDTO
+    ): Promise<VaccineAppointment> {
+        const appo = await this.vaccineAppointmentModel.findOne({ _id: id, isDeleted: false });
+        if (!appo) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
+        }
+
+        // Chỉ cập nhật sau khi đã tiêm xong
+        if (appo.status !== AppointmentStatus.Vaccinated) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ cập nhật tình trạng sau tiêm khi đã tiêm vaccine');
+        }
+
+        appo.postVaccinationStatus = body.postVaccinationStatus;
+        appo.postVaccinationNotes = body.postVaccinationNotes;
+        await appo.save();
+
+        return appo;
+    }
+
 }

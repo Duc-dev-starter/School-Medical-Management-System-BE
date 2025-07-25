@@ -1,21 +1,44 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsDateString } from 'class-validator';
 
 export class CreateMedicineDTO {
-  @ApiProperty({ example: 'Paracetamol', description: 'Tên của thuốc' })
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'Thuốc giảm đau', description: 'Mô tả của thuốc' })
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
-  @ApiProperty({ example: '500mg', description: 'Liều lượng' })
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  dosage: string;
+  dosage?: string;
 
-  @ApiProperty({ example: 'Buồn ngủ', description: 'Tác dụng phụ' })
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  sideEffects: string;
+  sideEffects?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  quantity?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  manufacturer?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  manufactureDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  expiryDate?: string;
 }

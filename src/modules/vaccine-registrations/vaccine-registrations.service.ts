@@ -195,6 +195,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
 
             await this.vaccineAppointmentModel.create({
                 studentId: reg.studentId,
+                schoolYear: reg.schoolYear,
                 eventId: reg.eventId,
                 status: AppointmentStatus.Pending,
                 isDeleted: false,

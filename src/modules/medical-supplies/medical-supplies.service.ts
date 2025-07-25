@@ -228,4 +228,15 @@ export class MedicalSuppliesService implements OnModuleInit {
 
         return { inserted: suppliesToInsert.length };
     }
+
+    async importQuantity(id: string, addQuantity: number): Promise<MedicalSupply> {
+        if (!id || typeof addQuantity !== 'number' || addQuantity <= 0) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Dữ liệu không hợp lệ');
+        }
+        const supply = await this.medicalSupplyModel.findOne({ _id: id, isDeleted: false });
+        if (!supply) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy vật tư');
+        supply.quantity = (supply.quantity || 0) + addQuantity;
+        await supply.save();
+        return supply;
+    }
 }

@@ -40,6 +40,15 @@ export class VaccineAppointment {
 
     @Prop({ required: true })
     schoolYear: string;
+
+    @Prop({
+        enum: ['not_checked', 'healthy', 'mild_reaction', 'severe_reaction', 'other'],
+        default: 'not_checked'
+    })
+    postVaccinationStatus: string;
+
+    @Prop()
+    postVaccinationNotes?: string;
 }
 
 export const VaccineAppointmentSchema = SchemaFactory.createForClass(VaccineAppointment);

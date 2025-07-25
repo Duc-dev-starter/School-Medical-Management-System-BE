@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { AppointmentStatus } from 'src/common/enums';
+import { AppointmentStatus, PostMedicalCheckStatus } from 'src/common/enums';
 
 export type MedicalCheckAppointmentDocument = HydratedDocument<MedicalCheckAppointment>;
 
@@ -56,6 +56,15 @@ export class MedicalCheckAppointment {
 
     @Prop({ type: Date })
     medicalCheckedAt?: Date;
+
+    @Prop({
+        enum: Object.values(PostMedicalCheckStatus),
+        default: PostMedicalCheckStatus.NotChecked,
+    })
+    postMedicalCheckStatus: PostMedicalCheckStatus;
+
+    @Prop()
+    postMedicalCheckNotes?: string;
 }
 
 export const MedicalCheckAppointmentSchema = SchemaFactory.createForClass(MedicalCheckAppointment);

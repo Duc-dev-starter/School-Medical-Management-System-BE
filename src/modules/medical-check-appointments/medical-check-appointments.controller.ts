@@ -28,6 +28,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { MedicalCheckAppointmentsService } from './medical-check-appointments.service';
 import { CheckMedicalCheckAppointmentDTO, CreateMedicalCheckAppointmentDTO, SearchMedicalCheckAppointmentDTO, UpdateMedicalCheckAppointmentDTO } from './dto';
 import { MedicalCheckAppointment } from './medical-check-appointments.schema';
+import { UpdatePostMedicalCheckDTO } from './dto/checkMedicalCheck.dto';
 
 @ApiTags('Medical Check Appoiment')
 @Controller('api/medical-check-appoinments')
@@ -102,4 +103,20 @@ export class MedicalCheckAppoimentsController {
     ) {
         return this.medicalCheckAppoimentService.nurseCheckAppointment(id, req.user, body);
     }
+
+
+    @ApiBearerAuth()
+    @Patch(':id/post-check')
+    @ApiOperation({ summary: 'Cập nhật tình trạng sức khỏe sau khi khám' })
+    @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy lịch hẹn' })
+    @ApiResponse({ status: 400, description: 'Chưa khám y tế hoặc dữ liệu không hợp lệ' })
+    async updatePostMedicalCheck(
+        @Param('id') id: string,
+        @Body() body: UpdatePostMedicalCheckDTO,
+    ) {
+        const updated = await this.medicalCheckAppoimentService.updatePostMedicalCheckStatus(id, body);
+        return formatResponse<MedicalCheckAppointment>(updated);
+    }
+
 }

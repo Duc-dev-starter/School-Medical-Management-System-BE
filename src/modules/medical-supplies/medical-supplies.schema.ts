@@ -21,6 +21,13 @@ export class MedicalSupply {
     expiryDate?: Date;
 
     @Prop()
+    manufacturer: string; // Thêm trường hãng sản xuất
+
+    @Prop()
+    manufactureDate: Date; // Ngày sản xuất
+
+
+    @Prop()
     supplier?: string;
 
     @Prop({ default: false })

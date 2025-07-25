@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString, ValidateNested, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum MedicalEventStatus {
     TREATED = 'treated',
@@ -17,6 +18,32 @@ export enum LeaveMethod {
     NONE = 'none',
     PARENT_PICKUP = 'parent_pickup',
     HOSPITAL_TRANSFER = 'hospital_transfer',
+}
+
+class MedicineUsageDto {
+    @ApiProperty({ description: 'ID thuốc', type: String })
+    @IsNotEmpty()
+    @IsMongoId()
+    medicineId: string;
+
+    @ApiProperty({ description: 'Số lượng sử dụng', example: 1 })
+    @IsNotEmpty()
+    @IsNumber()
+    @Min(1)
+    quantity: number;
+}
+
+class MedicalSupplyUsageDto {
+    @ApiProperty({ description: 'ID vật tư y tế', type: String })
+    @IsNotEmpty()
+    @IsMongoId()
+    supplyId: string;
+
+    @ApiProperty({ description: 'Số lượng sử dụng', example: 1 })
+    @IsNotEmpty()
+    @IsNumber()
+    @Min(1)
+    quantity: number;
 }
 
 export class CreateMedicalEventDto {
@@ -46,22 +73,24 @@ export class CreateMedicalEventDto {
     actionTaken?: string;
 
     @ApiPropertyOptional({
-        description: 'Danh sách ID thuốc đã dùng',
-        type: [String]
+        description: 'Danh sách thuốc đã dùng với số lượng',
+        type: [MedicineUsageDto],
     })
     @IsOptional()
     @IsArray()
-    @IsMongoId({ each: true })
-    medicinesId?: string[];
+    @ValidateNested({ each: true })
+    @Type(() => MedicineUsageDto)
+    medicinesUsed?: MedicineUsageDto[];
 
     @ApiPropertyOptional({
-        description: 'Danh sách ID vật tư y tế đã dùng',
-        type: [String]
+        description: 'Danh sách vật tư y tế đã dùng với số lượng',
+        type: [MedicalSupplyUsageDto],
     })
     @IsOptional()
     @IsArray()
-    @IsMongoId({ each: true })
-    medicalSuppliesId?: string[];
+    @ValidateNested({ each: true })
+    @Type(() => MedicalSupplyUsageDto)
+    medicalSuppliesUsed?: MedicalSupplyUsageDto[];
 
     @ApiPropertyOptional({ description: 'Mức độ nghiêm trọng', enum: SeverityLevel, default: SeverityLevel.MILD })
     @IsOptional()
@@ -99,4 +128,3 @@ export class CreateMedicalEventDto {
     @IsString()
     notes?: string;
 }
-
