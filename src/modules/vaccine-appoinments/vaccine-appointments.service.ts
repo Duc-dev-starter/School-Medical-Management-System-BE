@@ -10,12 +10,20 @@ import { IUser } from '../users/users.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { UpdatePostVaccineDTO } from './dto/checkVaccine.dto';
+import { formatDateTime } from 'src/utils/helpers';
+import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { Student, StudentDocument } from '../students/students.schema';
+import { VaccineEvent } from '../vaccine-events/vaccine-events.schema';
 
 @Injectable()
 export class VaccineAppoimentsService implements OnModuleInit {
     constructor(
         @InjectModel(VaccineAppointment.name) private vaccineAppointmentModel: Model<VaccineAppointmentDocument>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        @InjectQueue('mailQueue') private readonly mailQueue: Queue,
+        @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
+        @InjectModel(VaccineEvent.name) private vaccineEventModel: Model<VaccineEvent>,
     ) { }
 
     async onModuleInit() {
@@ -174,7 +182,49 @@ export class VaccineAppoimentsService implements OnModuleInit {
             appo.status = AppointmentStatus.Ineligible;
             appo.reasonIfIneligible = data.reasonIfIneligible || 'Không đủ điều kiện tiêm';
             appo.vaccinatedAt = undefined;
-        } else {
+
+            // Lấy thông tin student + event
+            const student = await this.studentModel.findById(appo.studentId)
+                .populate('parents.userId')
+                .lean();
+            const event = await this.vaccineEventModel.findById(appo.eventId).lean();
+
+            if (student && event && Array.isArray(student.parents)) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId as any;
+                    if (parent?.email) {
+                        const subject = `Thông báo kết quả kiểm tra tiêm vaccine`;
+                        const html = `
+<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+  <h2 style="color:#d32f2f;">Học sinh ${student.fullName} không đủ điều kiện tiêm vaccine</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Vaccine:</b></td>
+      <td style="padding:6px 0;">${event.vaccineName}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Thời gian sự kiện:</b></td>
+      <td style="padding:6px 0;">${event.eventDate}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Lý do:</b></td>
+      <td style="padding:6px 0;">${appo.reasonIfIneligible}</td>
+    </tr>
+  </table>
+  <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
+    Vui lòng liên hệ nhà trường để biết thêm chi tiết hoặc lịch hẹn tiêm bổ sung.
+  </p>
+</div>`;
+                        await this.mailQueue.add('send-vaccine-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
+                    }
+                }
+            }
+        }
+        else {
             if (data.vaccinatedAt) {
                 appo.status = AppointmentStatus.Vaccinated;
                 appo.vaccinatedAt = data.vaccinatedAt;
@@ -194,21 +244,103 @@ export class VaccineAppoimentsService implements OnModuleInit {
         id: string,
         body: UpdatePostVaccineDTO
     ): Promise<VaccineAppointment> {
-        const appo = await this.vaccineAppointmentModel.findOne({ _id: id, isDeleted: false });
+        const appo = await this.vaccineAppointmentModel
+            .findOne({ _id: id, isDeleted: false })
+            .populate('student')
+            .populate('event')
+            .lean();
+
         if (!appo) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
         }
 
-        // Chỉ cập nhật sau khi đã tiêm xong
+        // Chỉ cho phép cập nhật khi đã tiêm vaccine
         if (appo.status !== AppointmentStatus.Vaccinated) {
-            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ cập nhật tình trạng sau tiêm khi đã tiêm vaccine');
+            throw new CustomHttpException(
+                HttpStatus.BAD_REQUEST,
+                'Chỉ cập nhật tình trạng sau tiêm khi đã tiêm vaccine',
+            );
         }
 
-        appo.postVaccinationStatus = body.postVaccinationStatus;
-        appo.postVaccinationNotes = body.postVaccinationNotes;
-        await appo.save();
+        // Cập nhật trạng thái và ghi chú sau tiêm
+        await this.vaccineAppointmentModel.findByIdAndUpdate(id, {
+            postVaccinationStatus: body.postVaccinationStatus,
+            postVaccinationNotes: body.postVaccinationNotes,
+        });
 
-        return appo;
+        // Lấy lại thông tin student và event
+        const student = await this.studentModel
+            .findById(appo.studentId)
+            .populate('parents.userId')
+            .lean() as any;
+        const event = await this.vaccineEventModel.findById(appo.eventId).lean();
+
+        if (student && Array.isArray(student.parents) && event) {
+            for (const parentInfo of student.parents) {
+                const parent = parentInfo.userId;
+                if (parent?.email) {
+                    const subject = `Kết quả theo dõi sau tiêm cho học sinh ${student.fullName}`;
+                    const html = `
+<div style="max-width:600px;margin:0 auto;padding:24px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #ddd;">
+  <h2 style="color:#1976d2;text-align:center;">Thông báo kết quả theo dõi sau tiêm</h2>
+  <p style="font-size:16px;color:#333;">Kính gửi phụ huynh,</p>
+  <p style="font-size:16px;color:#333;">Nhà trường xin gửi kết quả theo dõi sau tiêm của học sinh:</p>
+
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr>
+      <td style="padding:6px 8px;color:#555;width:30%;"><b>Học sinh:</b></td>
+      <td style="padding:6px 8px;color:#333;">${student.fullName}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Vaccine:</b></td>
+      <td style="padding:6px 8px;color:#333;">${event.vaccineName}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Sự kiện:</b></td>
+      <td style="padding:6px 8px;color:#333;">${event.title}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Ngày tiêm:</b></td>
+      <td style="padding:6px 8px;color:#333;">${event.eventDate ? formatDateTime(event.eventDate) : ''}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Địa điểm:</b></td>
+      <td style="padding:6px 8px;color:#333;">${event.location}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Nhà cung cấp:</b></td>
+      <td style="padding:6px 8px;color:#333;">${event.provider}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Tình trạng sau tiêm:</b></td>
+      <td style="padding:6px 8px;color:#333;">${body.postVaccinationStatus}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 8px;color:#555;"><b>Ghi chú:</b></td>
+      <td style="padding:6px 8px;color:#333;">${body.postVaccinationNotes || 'Không có ghi chú'}</td>
+    </tr>
+  </table>
+
+  <p style="margin:16px 0;font-size:15px;color:#333;">
+    Nhà trường sẽ tiếp tục theo dõi tình trạng sức khỏe của học sinh. Nếu có bất thường, phụ huynh vui lòng liên hệ ngay với nhà trường hoặc cơ sở y tế.
+  </p>
+
+  <p style="font-size:12px;color:#888;text-align:center;">
+    Email này được gửi tự động, vui lòng không trả lời.
+  </p>
+</div>
+                `;
+
+                    await this.mailQueue.add('send-vaccine-mail', {
+                        to: parent.email,
+                        subject,
+                        html,
+                    });
+                }
+            }
+        }
+
+        return await this.vaccineAppointmentModel.findById(id);
     }
 
 }

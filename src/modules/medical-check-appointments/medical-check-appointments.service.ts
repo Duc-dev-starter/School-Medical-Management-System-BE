@@ -27,6 +27,10 @@ import { IUser } from '../users/users.interface';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { UpdatePostMedicalCheckDTO } from './dto/checkMedicalCheck.dto';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { Student, StudentDocument } from '../students/students.schema';
+import { MedicalCheckEvent, MedicalCheckEventDocument } from '../medical-check-events/medical-check-events.schema';
 
 @Injectable()
 export class MedicalCheckAppointmentsService implements OnModuleInit {
@@ -36,6 +40,10 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
 
         @Inject(CACHE_MANAGER)
         private readonly cacheManager: Cache,
+
+        @InjectQueue('mailQueue') private readonly mailQueue: Queue,
+        @InjectModel(Student.name) private studentModel: Model<StudentDocument>,
+        @InjectModel(MedicalCheckEvent.name) private medicalCheckEventModel: Model<MedicalCheckEventDocument>,
     ) { }
 
     async onModuleInit() {
@@ -207,8 +215,53 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
         }
 
         await appo.save();
+
+        // --- Gửi mail cho phụ huynh nếu không đủ điều kiện khám ---
+        if (!data.isEligible) {
+            const student = await this.studentModel.findById(appo.studentId)
+                .populate('parents.userId')
+                .lean();
+            const event = await this.medicalCheckEventModel.findById(appo.eventId).lean();
+
+            if (student && event && Array.isArray(student.parents)) {
+                for (const parentInfo of student.parents) {
+                    const parent = parentInfo.userId as any;
+                    if (parent?.email) {
+                        const subject = `Kết quả khám sức khỏe của học sinh ${student.fullName}`;
+                        const html = `
+<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+  <h2 style="color:#d32f2f;">Học sinh ${student.fullName} không đủ điều kiện khám</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Sự kiện khám:</b></td>
+      <td style="padding:6px 0;">${event.eventName}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Ngày khám:</b></td>
+      <td style="padding:6px 0;">${event.eventDate}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Lý do:</b></td>
+      <td style="padding:6px 0;">${appo.reasonIfIneligible}</td>
+    </tr>
+  </table>
+  <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
+    Vui lòng liên hệ nhà trường để được tư vấn thêm.
+  </p>
+</div>`;
+                        await this.mailQueue.add('send-vaccine-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
+                    }
+                }
+            }
+        }
+
         return appo;
     }
+
 
     async updatePostMedicalCheckStatus(
         id: string,
@@ -225,7 +278,36 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
         appo.postMedicalCheckNotes = dto.postMedicalCheckNotes;
         await appo.save();
 
+        // --- Gửi mail báo kết quả hậu khám ---
+        const student = await this.studentModel.findById(appo.studentId)
+            .populate('parents.userId')
+            .lean();
+        const event = await this.medicalCheckEventModel.findById(appo.eventId).lean();
+
+        if (student && event && Array.isArray(student.parents)) {
+            for (const parentInfo of student.parents) {
+                const parent = parentInfo.userId as any;
+                if (parent?.email) {
+                    const subject = `Kết quả hậu khám sức khỏe của học sinh ${student.fullName}`;
+                    const html = `
+<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+  <h2 style="color:#388e3c;">Kết quả hậu khám sức khỏe</h2>
+  <p>Học sinh: <b>${student.fullName}</b></p>
+  <p>Sự kiện: <b>${event.eventName}</b></p>
+  <p>Tình trạng sau khám: <b>${dto.postMedicalCheckStatus}</b></p>
+  <p>Ghi chú: ${dto.postMedicalCheckNotes || 'Không có'}</p>
+</div>`;
+                    await this.mailQueue.add('send-vaccine-mail', {
+                        to: parent.email,
+                        subject,
+                        html,
+                    });
+                }
+            }
+        }
+
         return appo;
     }
+
 
 }
