@@ -27,6 +27,9 @@ export class Medicine {
     manufactureDate: Date; // Ngày sản xuất
 
     @Prop()
+    unit: string;
+
+    @Prop()
     expiryDate: Date; // Ngày hết hạn
 
     @Prop({ type: Boolean, default: false })

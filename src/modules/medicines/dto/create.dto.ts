@@ -7,6 +7,11 @@ export class CreateMedicineDTO {
   @IsString()
   name: string;
 
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  unit: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
