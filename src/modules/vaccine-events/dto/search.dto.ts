@@ -30,7 +30,7 @@ export class SearchVaccineEventDTO extends PaginationRequestModel {
     @ApiProperty({
         description: 'Trạng thái sự kiện (pending, active, completed)',
         required: false,
-        enum: ['pending', 'active', 'completed'],
+        enum: ['ongoing', 'completed', 'cancelled'],
     })
     status?: string;
 }
