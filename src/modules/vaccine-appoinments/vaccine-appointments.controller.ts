@@ -83,6 +83,7 @@ export class VaccineAppoimentsController {
     }
 
     @Patch(':id/check')
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Điều dưỡng xác nhận kiểm tra lịch hẹn tiêm cho học sinh' })
     @ApiResponse({ status: 200, description: 'Thành công' })
     @ApiResponse({ status: 403, description: 'Không đủ quyền' })
