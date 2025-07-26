@@ -24,10 +24,5 @@ export class CheckMedicalCheckAppointmentDTO {
     @ApiPropertyOptional({ example: '2025-06-01T08:00:00.000Z', description: 'Thời gian tiêm (nếu tiêm luôn)' })
     @IsOptional()
     @IsDateString()
-    checkedAt?: Date;
-
-    @ApiPropertyOptional({ example: '2025-06-01T08:00:00.000Z', description: 'Thời gian tiêm (nếu tiêm luôn)' })
-    @IsOptional()
-    @IsDateString()
     medicalCheckedAt?: Date;
 }
