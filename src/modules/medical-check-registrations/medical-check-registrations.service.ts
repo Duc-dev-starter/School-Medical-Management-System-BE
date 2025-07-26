@@ -104,12 +104,23 @@ export class MedicalCheckRegistrationsService {
         }
 
         if (parentId?.trim()) {
-            filters.parentId = parentId.trim();
+            if (Types.ObjectId.isValid(parentId)) {
+                filters.gradeId = new Types.ObjectId(parentId.trim());
+            } else {
+                throw new Error('Invalid parentId');
+            }
         }
 
+
+
         if (studentId?.trim()) {
-            filters.studentId = studentId.trim();
+            if (Types.ObjectId.isValid(studentId)) {
+                filters.gradeId = new Types.ObjectId(studentId.trim());
+            } else {
+                throw new Error('Invalid studentId');
+            }
         }
+
 
 
 
