@@ -1,46 +1,54 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CustomHttpException } from 'src/common/exceptions';
 import { PaginationResponseModel, SearchPaginationResponseModel } from 'src/common/models';
 import { IUser } from '../users/users.interface';
-import { MedicalCheckRegistration, MedicalCheckRegistrationDocument } from './medical-check-registrations.schema';
-import { CreateMedicalCheckRegistrationDTO, SearchMedicalCheckRegistrationDTO, UpdateMedicalCheckRegistrationDTO, UpdateRegistrationStatusDTO } from './dto';
+import {
+    MedicalCheckRegistration,
+    MedicalCheckRegistrationDocument,
+} from './medical-check-registrations.schema';
+import {
+    MedicalCheckAppointment,
+    MedicalCheckAppointmentDocument,
+} from '../medical-check-appointments/medical-check-appointments.schema';
+import {
+    MedicalCheckEvent,
+    MedicalCheckEventDocument,
+} from '../medical-check-events/medical-check-events.schema';
+import {
+    CreateMedicalCheckRegistrationDTO,
+    SearchMedicalCheckRegistrationDTO,
+    UpdateMedicalCheckRegistrationDTO,
+    UpdateRegistrationStatusDTO,
+} from './dto';
 import { AppointmentStatus, RegistrationStatus } from 'src/common/enums';
-import { formatDateTime } from 'src/utils/helpers';
 import { Student, StudentDocument } from '../students/students.schema';
 import { User, UserDocument } from '../users/users.schema';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { MedicalCheckAppointmentDocument } from '../medical-check-appointments/medical-check-appointments.schema';
-import { MedicalCheckEvent, MedicalCheckEventDocument } from '../medical-check-events/medical-check-events.schema';
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 
-
 @Injectable()
-export class MedicalCheckRegistrationsService {
+export class MedicalCheckRegistrationsService implements OnModuleInit {
     constructor(
         @InjectModel(MedicalCheckRegistration.name)
         private medicalCheckregistrationModel: Model<MedicalCheckRegistrationDocument>,
         @InjectModel(Student.name)
         private studentModel: Model<StudentDocument>,
-
         @InjectModel(User.name)
         private userModel: Model<UserDocument>,
-
-        @InjectModel(MedicalCheckRegistration.name)
-        private medicalCheckAppoinmentModel: Model<MedicalCheckAppointmentDocument>,
-
+        @InjectModel(MedicalCheckAppointment.name)
+        private medicalCheckAppointmentModel: Model<MedicalCheckAppointmentDocument>,
         @InjectModel(MedicalCheckEvent.name)
         private medicalCheckEventModel: Model<MedicalCheckEventDocument>,
-
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
-
         @InjectQueue('mailQueue')
-        private readonly mailQueue: Queue,) { }
+        private readonly mailQueue: Queue,
+    ) { }
 
     async onModuleInit() {
         console.log('🚀 Change Streams cho Medical Check Registration đã khởi động');
@@ -56,7 +64,7 @@ export class MedicalCheckRegistrationsService {
 
             console.log(`📝 Thao tác: ${operationType}, Event ID: ${registrationId}`);
 
-            if (["insert", "update", "replace", "delete"].includes(operationType)) {
+            if (['insert', 'update', 'replace', 'delete'].includes(operationType)) {
                 await this.cacheManager.del(`medicalCheckRegistration:${registrationId}`);
                 console.log(`🗑️ Đã xoá cache medicalCheckRegistration:${registrationId}`);
 
@@ -78,7 +86,7 @@ export class MedicalCheckRegistrationsService {
             isDeleted: false,
             schoolYear: payload.schoolYear,
             studentId: payload.studentId,
-            eventId: payload.eventId
+            eventId: payload.eventId,
         });
 
         if (exists) {
@@ -105,28 +113,23 @@ export class MedicalCheckRegistrationsService {
 
         if (parentId?.trim()) {
             if (Types.ObjectId.isValid(parentId)) {
-                filters.gradeId = new Types.ObjectId(parentId.trim());
+                filters.parentId = new Types.ObjectId(parentId.trim());
             } else {
                 throw new Error('Invalid parentId');
             }
         }
 
-
-
         if (studentId?.trim()) {
             if (Types.ObjectId.isValid(studentId)) {
-                filters.gradeId = new Types.ObjectId(studentId.trim());
+                filters.studentId = new Types.ObjectId(studentId.trim());
             } else {
                 throw new Error('Invalid studentId');
             }
         }
 
-
-
-
         if (eventId?.trim()) {
             if (Types.ObjectId.isValid(eventId)) {
-                filters.gradeId = new Types.ObjectId(eventId.trim());
+                filters.eventId = new Types.ObjectId(eventId.trim());
             } else {
                 throw new Error('Invalid eventId');
             }
@@ -186,73 +189,106 @@ export class MedicalCheckRegistrationsService {
     }
 
     async updateStatus(id: string, dto: UpdateRegistrationStatusDTO) {
+        // Validate input ID
+        if (!Types.ObjectId.isValid(id)) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Invalid registration ID');
+        }
+
+        // Fetch the registration
         const reg = await this.medicalCheckregistrationModel.findOne({ _id: id, isDeleted: false });
-        if (!reg) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn đăng kí');
-
-        // Không cho phép chuyển về "pending"
-        if (reg.status !== RegistrationStatus.Pending) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Chỉ được cập nhật trạng thái khi đơn đang ở trạng thái pending');
+        if (!reg) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn đăng kí');
         }
+
+        // Log initial document state
+        console.log('Initial reg document:', JSON.stringify(reg, null, 2));
+
+        // Ensure parentId is a valid ObjectId
+        if (!reg.parentId || !Types.ObjectId.isValid(reg.parentId)) {
+            throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'parentId is missing or invalid in fetched document');
+        }
+
+        console.log('ở đây');
+
+        // Prevent transitioning to "pending"
         if (dto.status === RegistrationStatus.Pending) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không thể chuyển trạng thái về pending');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không thể chuyển trạng thái về pending');
         }
 
+        // Require cancellation reason for rejection
         if (dto.status === RegistrationStatus.Rejected && !dto.cancellationReason) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Phải có lý do khi từ chối đơn');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phải có lý do khi từ chối đơn');
         }
 
-        reg.status = dto.status;
+        // Store original parentId to restore if needed
+        const originalParentId = reg.parentId;
 
-        // ===== Approved =====
+        // Update status and related fields
+        reg.status = dto.status;
+        console.log('After status update:', JSON.stringify(reg, null, 2));
+        console.log('ở đây2');
+
+        // Handle Approved status
         if (dto.status === RegistrationStatus.Approved) {
             reg.approvedAt = new Date();
             reg.cancellationReason = undefined;
 
-            await this.medicalCheckAppoinmentModel.create({
-                studentId: reg.studentId,
-                schoolYear: reg.schoolYear,
-                eventId: reg.eventId,
-                status: AppointmentStatus.Pending,
-                isDeleted: false,
-            });
+            try {
+                await this.medicalCheckAppointmentModel.create({
+                    studentId: reg.studentId,
+                    schoolYear: reg.schoolYear,
+                    eventId: reg.eventId,
+                    status: AppointmentStatus.Pending,
+                    isDeleted: false,
+                });
+            } catch (error) {
+                console.error('Error creating appointment:', error);
+                throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to create appointment: ' + error.message);
+            }
 
-            const student = await this.studentModel.findById(reg.studentId)
-                .populate('parents.userId')
-                .lean();
-            const event = await this.medicalCheckEventModel.findById(reg.eventId).lean();
+            console.log('After appointment creation:', JSON.stringify(reg, null, 2));
+            console.log('ở đây3');
+
+            const [student, event] = await Promise.all([
+                this.studentModel.findById(reg.studentId).populate('parents.userId').lean(),
+                this.medicalCheckEventModel.findById(reg.eventId).lean(),
+            ]);
+
+            console.log('Student:', student);
+            console.log('Event:', event);
 
             if (student && Array.isArray(student.parents) && event) {
                 for (const parentInfo of student.parents) {
                     const parent = parentInfo.userId as any;
-                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                    if (parent?.email) {
                         const subject = 'Xác nhận đăng ký khám sức khỏe thành công';
                         const html = `
-                        <div style="font-family: Arial, sans-serif;">
-                          <h2>Đơn khám sức khỏe đã được duyệt!</h2>
-                          <p>Học sinh: <b>${student.fullName}</b></p>
-                          <p>Sự kiện: <b>${event.eventName}</b></p>
-                          <p>Vui lòng đến đúng giờ.</p>
-                        </div>
-                    `;
+                            <div style="font-family: Arial, sans-serif;">
+                              <h2>Đơn khám sức khỏe đã được duyệt!</h2>
+                              <p>Học sinh: <b>${student.fullName}</b></p>
+                              <p>Sự kiện: <b>${event.eventName}</b></p>
+                              <p>Vui lòng đến đúng giờ.</p>
+                            </div>
+                        `;
                         await this.mailQueue.add('send-vaccine-mail', { to: parent.email, subject, html });
                     }
                 }
             }
         }
 
-        // ===== Rejected =====
+        // Handle Rejected status
         if (dto.status === RegistrationStatus.Rejected) {
             reg.cancellationReason = dto.cancellationReason;
         }
 
-        // ===== Cancelled =====
+        // Handle Cancelled status
         if (dto.status === RegistrationStatus.Cancelled) {
             reg.cancellationReason = dto.cancellationReason || 'Sự kiện đã bị nhà trường hủy';
 
-            const student = await this.studentModel.findById(reg.studentId)
-                .populate('parents.userId')
-                .lean();
-            const event = await this.medicalCheckEventModel.findById(reg.eventId).lean();
+            const [student, event] = await Promise.all([
+                this.studentModel.findById(reg.studentId).populate('parents.userId').lean(),
+                this.medicalCheckEventModel.findById(reg.eventId).lean(),
+            ]);
 
             if (student && Array.isArray(student.parents) && event) {
                 for (const parentInfo of student.parents) {
@@ -260,26 +296,43 @@ export class MedicalCheckRegistrationsService {
                     if (parent?.email) {
                         const subject = 'Thông báo hủy đăng ký khám sức khỏe';
                         const html = `
-                        <div style="font-family: Arial, sans-serif;">
-                          <h2>Đơn đăng ký khám sức khỏe bị hủy</h2>
-                          <p>Học sinh: <b>${student.fullName}</b></p>
-                          <p>Sự kiện: <b>${event.eventName}</b></p>
-                          <p>Lý do: <b>${reg.cancellationReason}</b></p>
-                        </div>
-                    `;
+                            <div style="font-family: Arial, sans-serif;">
+                              <h2>Đơn đăng ký khám sức khỏe bị hủy</h2>
+                              <p>Học sinh: <b>${student.fullName}</b></p>
+                              <p>Sự kiện: <b>${event.eventName}</b></p>
+                              <p>Lý do: <b>${reg.cancellationReason}</b></p>
+                            </div>
+                        `;
                         await this.mailQueue.add('send-vaccine-mail', { to: parent.email, subject, html });
                     }
                 }
             }
         }
-        console.log('Trước khi lưu:', reg);
-        if (!reg.parentId) {
-            throw new Error('parentId bị thiếu trong bản ghi MedicalCheckRegistration');
+
+        console.log('After status handling:', JSON.stringify(reg, null, 2));
+        console.log('ở đây4');
+
+        // Ensure parentId is not unset
+        if (!reg.parentId || reg.parentId.toString() !== originalParentId.toString()) {
+            console.log('Restoring parentId:', originalParentId);
+            reg.parentId = originalParentId; // Restore original parentId
         }
-        await reg.save();
+
+        // Log document before saving
+        console.log('Before save:', JSON.stringify(reg, null, 2));
+
+        // Save the document
+        try {
+            await reg.save();
+        } catch (error) {
+            console.error('Save error:', error);
+            throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to save registration: ' + error.message);
+        }
+
+        // Log document after saving
+        console.log('After save:', JSON.stringify(reg, null, 2));
         return reg;
     }
-
 
     async exportExcel(params: SearchMedicalCheckRegistrationDTO, res: Response) {
         const { query, eventId, status, studentId } = params;
@@ -312,7 +365,7 @@ export class MedicalCheckRegistrationsService {
             pending: 'Chờ duyệt',
             approved: 'Đã duyệt',
             rejected: 'Từ chối',
-            cancelled: 'Đã hủy'
+            cancelled: 'Đã hủy',
         };
 
         // Excel setup
@@ -333,7 +386,7 @@ export class MedicalCheckRegistrationsService {
             { header: 'Trạng thái', key: 'status', width: 14 },
             { header: 'Lý do hủy/từ chối', key: 'cancellationReason', width: 22 },
             { header: 'Ghi chú', key: 'note', width: 24 },
-            { header: 'Ngày duyệt', key: 'approvedAt', width: 18 }
+            { header: 'Ngày duyệt', key: 'approvedAt', width: 18 },
         ];
 
         regs.forEach((item, idx) => {
@@ -342,7 +395,7 @@ export class MedicalCheckRegistrationsService {
                 studentName: item.student?.fullName || '',
                 studentCode: item.student?.studentCode || '',
                 studentDob: item.student?.dob ? new Date(item.student.dob).toLocaleDateString('vi-VN') : '',
-                studentGender: item.student?.gender === 'male' ? 'Nam' : (item.student?.gender === 'female' ? 'Nữ' : ''),
+                studentGender: item.student?.gender === 'male' ? 'Nam' : item.student?.gender === 'female' ? 'Nữ' : '',
                 parentName: item.parent?.fullName || '',
                 parentPhone: item.parent?.phone || '',
                 parentEmail: item.parent?.email || '',
@@ -351,7 +404,7 @@ export class MedicalCheckRegistrationsService {
                 status: statusMap[item.status] || item.status,
                 cancellationReason: item.cancellationReason || '',
                 note: item.note || '',
-                approvedAt: item.approvedAt ? new Date(item.approvedAt).toLocaleString('vi-VN') : ''
+                approvedAt: item.approvedAt ? new Date(item.approvedAt).toLocaleString('vi-VN') : '',
             });
         });
 
