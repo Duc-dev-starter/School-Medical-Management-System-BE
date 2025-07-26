@@ -68,7 +68,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
             isDeleted: false,
             schoolYear: payload.schoolYear,
             eventId: payload.eventId,
-            studentId: payload.studentId
+            studentId: payload.studentId,
         });
 
         if (existing) {
@@ -113,7 +113,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         const updated = await this.vaccineRegistrationModel.findOneAndUpdate(
             { _id: id, isDeleted: false },
             { $set: data },
-            { new: true }
+            { new: true },
         );
         if (!updated) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy sự kiện');
@@ -134,7 +134,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         if (query?.trim()) {
             filters.$or = [
                 { cancellationReason: { $regex: query, $options: 'i' } },
-                { notes: { $regex: query, $options: 'i' } }
+                { notes: { $regex: query, $options: 'i' } },
             ];
         }
         if (status?.trim()) {
@@ -142,20 +142,25 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         }
         if (eventId?.trim()) {
             if (Types.ObjectId.isValid(eventId)) {
-                filters.gradeId = new Types.ObjectId(eventId.trim());
+                filters.eventId = new Types.ObjectId(eventId.trim()); // Fixed: Changed gradeId to eventId
             } else {
                 throw new Error('Invalid eventId');
             }
         }
-        if (parentId?.trim()) filters.parentId = parentId;
+        if (parentId?.trim()) {
+            if (Types.ObjectId.isValid(parentId)) {
+                filters.parentId = new Types.ObjectId(parentId.trim());
+            } else {
+                throw new Error('Invalid parentId');
+            }
+        }
         if (studentId?.trim()) {
             if (Types.ObjectId.isValid(studentId)) {
-                filters.gradeId = new Types.ObjectId(studentId.trim());
+                filters.studentId = new Types.ObjectId(studentId.trim()); // Fixed: Changed gradeId to studentId
             } else {
-                throw new Error('Invalid eventId');
+                throw new Error('Invalid studentId');
             }
         }
-
 
         const totalItems = await this.vaccineRegistrationModel.countDocuments(filters);
         const items = await this.vaccineRegistrationModel
@@ -194,78 +199,104 @@ export class VaccineRegistrationsServices implements OnModuleInit {
     }
 
     async updateStatus(id: string, dto: UpdateRegistrationStatusDTO) {
-        const reg = await this.vaccineRegistrationModel.findOne({ _id: id, isDeleted: false });
-        if (!reg) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn đăng kí');
+        // Validate input ID
+        if (!Types.ObjectId.isValid(id)) {
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Invalid registration ID');
+        }
 
+        // Fetch the registration
+        const reg = await this.vaccineRegistrationModel.findOne({ _id: id, isDeleted: false });
+        if (!reg) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy đơn đăng kí');
+        }
+
+        // Log initial document state
+        console.log('Initial reg document:', JSON.stringify(reg, null, 2));
+
+        // Ensure parentId is a valid ObjectId
+        if (!reg.parentId || !Types.ObjectId.isValid(reg.parentId)) {
+            throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'parentId is missing or invalid in fetched document');
+        }
+
+        // Prevent transitioning to "pending" or updating non-pending registrations
         if (reg.status !== RegistrationStatus.Pending) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Chỉ được cập nhật trạng thái khi đơn đang ở trạng thái pending');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ được cập nhật trạng thái khi đơn đang ở trạng thái pending');
         }
         if (dto.status === RegistrationStatus.Pending) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không thể chuyển trạng thái về pending');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không thể chuyển trạng thái về pending');
         }
 
+        // Require cancellation reason for rejection
         if (dto.status === RegistrationStatus.Rejected && !dto.cancellationReason) {
-            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Phải có lý do khi từ chối đơn');
+            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Phải có lý do khi từ chối đơn');
         }
 
+        // Store original parentId to restore if needed
+        const originalParentId = reg.parentId;
+
+        // Update status
         reg.status = dto.status;
+        console.log('After status update:', JSON.stringify(reg, null, 2));
+
+        // Handle Approved status
         if (dto.status === RegistrationStatus.Approved) {
             reg.approvedAt = new Date();
             reg.cancellationReason = undefined;
 
-            await this.vaccineAppointmentModel.create({
-                studentId: reg.studentId,
-                schoolYear: reg.schoolYear,
-                eventId: reg.eventId,
-                status: AppointmentStatus.Pending,
-                isDeleted: false,
-            });
+            try {
+                await this.vaccineAppointmentModel.create({
+                    studentId: reg.studentId,
+                    schoolYear: reg.schoolYear,
+                    eventId: reg.eventId,
+                    status: AppointmentStatus.Pending,
+                    isDeleted: false,
+                });
+            } catch (error) {
+                console.error('Error creating appointment:', error);
+                throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to create appointment: ' + error.message);
+            }
 
-            const student = await this.studentModel.findById(reg.studentId)
-                .populate('parents.userId')
-                .lean();
-            const event = await this.vaccineEventModel.findById(reg.eventId).lean();
+            console.log('After appointment creation:', JSON.stringify(reg, null, 2));
+
+            const [student, event] = await Promise.all([
+                this.studentModel.findById(reg.studentId).populate('parents.userId').lean(),
+                this.vaccineEventModel.findById(reg.eventId).lean(),
+            ]);
+
+            console.log('Student:', student);
+            console.log('Event:', event);
 
             if (student && Array.isArray(student.parents) && event) {
                 for (const parentInfo of student.parents) {
-                    const parent = parentInfo.userId;
-                    if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
+                    const parent = parentInfo.userId as any;
+                    if (parent?.email) {
                         const subject = 'Xác nhận đăng ký tiêm vaccine thành công';
                         const html = `
-<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
-  <h2 style="color:#388e3c;">Đăng ký tiêm vaccine đã được duyệt!</h2>
-  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-    <tr>
-      <td style="padding:6px 0;color:#555;"><b>Vaccine:</b></td>
-      <td style="padding:6px 0;">${event.vaccineName}</td>
-    </tr>
-    <tr>
-      <td style="padding:6px 0;color:#555;"><b>Thời gian đăng kí:</b></td>
-      <td style="padding:6px 0;">${event.startRegistrationDate ? formatDateTime(event.startRegistrationDate) : ''} - ${event.endRegistrationDate ? formatDateTime(event.endRegistrationDate) : ''}</td>
-    </tr>
-    <tr>
-      <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
-      <td style="padding:6px 0;">${event.location}</td>
-    </tr>
-    <tr>
-      <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
-      <td style="padding:6px 0;">${student.fullName}</td>
-    </tr>
-  </table>
-  <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
-    <b>Đơn đăng ký tiêm vaccine cho học sinh đã được duyệt. Vui lòng đưa học sinh đến sự kiện đúng thời gian!</b>
-  </p>
-  <div style="text-align:center;margin-bottom:8px;">
-    <a href="http://localhost:3000/vaccine-appointment"
-      style="display:inline-block;padding:12px 24px;background:#388e3c;color:#fff;text-decoration:none;font-weight:bold;border-radius:6px;font-size:16px;">
-      Xem chi tiết lịch hẹn tiêm
-    </a>
-  </div>
-  <p style="font-size:12px;color:#888;text-align:center;">Nếu nút không hiển thị, hãy copy link sau vào trình duyệt:<br>
-    <a href="http://localhost:3000/vaccine-appointment" style="color:#388e3c;">http://localhost:3000/vaccine-appointment</a>
-  </p>
-</div>
-`;
+                            <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+                              <h2 style="color:#388e3c;">Đăng ký tiêm vaccine đã được duyệt!</h2>
+                              <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                                <tr>
+                                  <td style="padding:6px 0;color:#555;"><b>Vaccine:</b></td>
+                                  <td style="padding:6px 0;">${event.vaccineName}</td>
+                                </tr>
+                                <tr>
+                                  <td style="padding:6px 0;color:#555;"><b>Thời gian đăng kí:</b></td>
+                                  <td style="padding:6px 0;">${event.startRegistrationDate ? formatDateTime(event.startRegistrationDate) : ''} - ${event.endRegistrationDate ? formatDateTime(event.endRegistrationDate) : ''}</td>
+                                </tr>
+                                <tr>
+                                  <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
+                                  <td style="padding:6px 0;">${event.location}</td>
+                                </tr>
+                                <tr>
+                                  <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
+                                  <td style="padding:6px 0;">${student.fullName}</td>
+                                </tr>
+                              </table>
+                              <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
+                                <b>Đơn đăng ký tiêm vaccine cho học sinh đã được duyệt. Vui lòng đưa học sinh đến sự kiện đúng thời gian!</b>
+                              </p>
+                            </div>
+                        `;
                         await this.mailQueue.add('send-vaccine-mail', {
                             to: parent.email,
                             subject,
@@ -275,36 +306,63 @@ export class VaccineRegistrationsServices implements OnModuleInit {
                 }
             }
         }
+
+        // Handle Rejected status
         if (dto.status === RegistrationStatus.Rejected) {
             reg.cancellationReason = dto.cancellationReason;
         }
-        if (dto.status === RegistrationStatus.Cancelled) {
-            reg.cancellationReason = dto.cancellationReason;
 
-            const student = await this.studentModel.findById(reg.studentId)
-                .populate('parents.userId')
-                .lean() as any;
-            const event = await this.vaccineEventModel.findById(reg.eventId).lean();
+        // Handle Cancelled status
+        if (dto.status === RegistrationStatus.Cancelled) {
+            reg.cancellationReason = dto.cancellationReason || 'Sự kiện đã bị nhà trường hủy';
+
+            const [student, event] = await Promise.all([
+                this.studentModel.findById(reg.studentId).populate('parents.userId').lean(),
+                this.vaccineEventModel.findById(reg.eventId).lean(),
+            ]);
 
             if (student && Array.isArray(student.parents) && event) {
                 for (const parentInfo of student.parents) {
-                    const parent = parentInfo.userId;
+                    const parent = parentInfo.userId as any;
                     if (parent?.email) {
-                        const subject = `Nhà trường thông báo hủy đơn đăng ký vaccine`;
+                        const subject = 'Nhà trường thông báo hủy đơn đăng ký vaccine';
                         const html = `
-                        <div>
-                          <h3>Đơn đăng ký tiêm vaccine cho học sinh ${student.fullName} đã bị hủy.</h3>
-                          <p>Sự kiện: ${event.title || event.vaccineName}</p>
-                          <p>Lý do: ${dto.cancellationReason}</p>
-                          <p>Nhà trường xin lỗi vì sự bất tiện này.</p>
-                        </div>`;
-                        await this.mailQueue.add('send-vaccine-mail', { to: parent.email, subject, html });
+                            <div style="font-family: Arial, sans-serif;">
+                              <h3>Đơn đăng ký tiêm vaccine cho học sinh ${student.fullName} đã bị hủy.</h3>
+                              <p>Sự kiện: ${event.title || event.vaccineName}</p>
+                              <p>Lý do: ${reg.cancellationReason}</p>
+                              <p>Nhà trường xin lỗi vì sự bất tiện này.</p>
+                            </div>
+                        `;
+                        await this.mailQueue.add('send-vaccine-mail', {
+                            to: parent.email,
+                            subject,
+                            html,
+                        });
                     }
                 }
             }
         }
 
-        await reg.save();
+        // Ensure parentId is not unset
+        if (!reg.parentId || reg.parentId.toString() !== originalParentId.toString()) {
+            console.log('Restoring parentId:', originalParentId);
+            reg.parentId = originalParentId; // Restore original parentId
+        }
+
+        // Log document before saving
+        console.log('Before save:', JSON.stringify(reg, null, 2));
+
+        // Save the document
+        try {
+            await reg.save();
+        } catch (error) {
+            console.error('Save error:', error);
+            throw new CustomHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to save registration: ' + error.message);
+        }
+
+        // Log document after saving
+        console.log('After save:', JSON.stringify(reg, null, 2));
         return reg;
     }
 
@@ -314,12 +372,30 @@ export class VaccineRegistrationsServices implements OnModuleInit {
         if (query?.trim()) {
             filters.$or = [
                 { cancellationReason: { $regex: query, $options: 'i' } },
-                { notes: { $regex: query, $options: 'i' } }
+                { notes: { $regex: query, $options: 'i' } },
             ];
         }
-        if (eventId?.trim()) filters.eventId = eventId;
-        if (parentId?.trim()) filters.parentId = parentId;
-        if (studentId?.trim()) filters.studentId = studentId;
+        if (eventId?.trim()) {
+            if (Types.ObjectId.isValid(eventId)) {
+                filters.eventId = new Types.ObjectId(eventId.trim());
+            } else {
+                throw new Error('Invalid eventId');
+            }
+        }
+        if (parentId?.trim()) {
+            if (Types.ObjectId.isValid(parentId)) {
+                filters.parentId = new Types.ObjectId(parentId.trim());
+            } else {
+                throw new Error('Invalid parentId');
+            }
+        }
+        if (studentId?.trim()) {
+            if (Types.ObjectId.isValid(studentId)) {
+                filters.studentId = new Types.ObjectId(studentId.trim());
+            } else {
+                throw new Error('Invalid studentId');
+            }
+        }
 
         const regs = await this.vaccineRegistrationModel
             .find(filters)
@@ -333,7 +409,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
             pending: 'Chờ duyệt',
             approved: 'Đã duyệt',
             rejected: 'Từ chối',
-            cancelled: 'Đã hủy'
+            cancelled: 'Đã hủy',
         };
 
         const workbook = new ExcelJS.Workbook();
@@ -361,7 +437,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
                 index: idx + 1,
                 studentName: reg.student?.fullName || '',
                 studentCode: reg.student?.studentCode || '',
-                studentGender: reg.student?.gender === 'male' ? 'Nam' : (reg.student?.gender === 'female' ? 'Nữ' : ''),
+                studentGender: reg.student?.gender === 'male' ? 'Nam' : reg.student?.gender === 'female' ? 'Nữ' : '',
                 studentDob: reg.student?.dob ? new Date(reg.student.dob).toLocaleDateString('vi-VN') : '',
                 parentName: reg.parent?.fullName || '',
                 parentPhone: reg.parent?.phone || '',
@@ -371,7 +447,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
                 createdAt: reg.createdAt ? new Date(reg.createdAt).toLocaleString('vi-VN') : '',
                 status: statusMap[reg.status] || reg.status,
                 cancellationReason: reg.cancellationReason || '',
-                notes: reg.notes || ''
+                notes: reg.notes || '',
             });
         });
 
