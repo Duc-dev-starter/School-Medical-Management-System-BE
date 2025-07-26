@@ -19,7 +19,7 @@ export class MedicalCheckRegistrationCronService {
     @Cron(CronExpression.EVERY_MINUTE)
     async rejectExpiredRegistrations() {
         const now = new Date();
-        const expiredEvents = await this.eventModel.find({ endDate: { $lt: now } }, '_id');
+        const expiredEvents = await this.eventModel.find({ endRegistrationDate: { $lt: now } }, '_id');
         const expiredEventIds = expiredEvents.map(e => e._id);
         if (!expiredEventIds.length) return;
         const result = await this.registrationModel.updateMany(

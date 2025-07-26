@@ -22,7 +22,7 @@ export class VaccineRegistrationCronService {
         const now = new Date();
 
         // Lấy các event đã hết hạn đăng ký
-        const expiredEvents = await this.vaccineEventModel.find({ endRegistration: { $lt: now } }, '_id');
+        const expiredEvents = await this.vaccineEventModel.find({ endRegistrationDate: { $lt: now } }, '_id');
         const expiredEventIds = expiredEvents.map(e => e._id);
         if (!expiredEventIds.length) return;
 
