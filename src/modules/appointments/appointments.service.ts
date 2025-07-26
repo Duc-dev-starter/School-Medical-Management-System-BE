@@ -188,9 +188,9 @@ export class AppointmentService {
         }
 
         // Không cho phép chuyển về "pending"
-        if (appointment.status !== ParentNurseAppointmentStatus.Pending) {
-            throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ được cập nhật trạng thái khi lịch hẹn đang ở trạng thái pending');
-        }
+        // if (appointment.status !== ParentNurseAppointmentStatus.Pending) {
+        //     throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Chỉ được cập nhật trạng thái khi lịch hẹn đang ở trạng thái pending');
+        // }
         if (dto.status === ParentNurseAppointmentStatus.Pending) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không thể chuyển trạng thái về pending');
         }
