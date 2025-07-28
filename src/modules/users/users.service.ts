@@ -308,4 +308,16 @@ export class UsersService {
   async updatePassword(userId: string, newHashedPassword: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(userId, { password: newHashedPassword });
   }
+
+  async setFullPermission(userId: string, fullPermission: boolean): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user || user.isDeleted) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy người dùng');
+    }
+
+    user.fullPermission = fullPermission;
+    await user.save();
+    return user;
+  }
+
 }

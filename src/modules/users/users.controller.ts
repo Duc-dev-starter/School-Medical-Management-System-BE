@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -27,6 +28,7 @@ import { RegisterDTO } from './dto/register.dto';
 import { formatResponse } from 'src/utils';
 import { UserWithoutPassword } from './users.interface';
 import { Student } from '../students/students.schema';
+import { UpdatePermissionDTO } from './dto/permission.dto';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -201,5 +203,19 @@ export class UsersController {
     const user = await this.usersService.getCurrentUser(req.user._id);
     return formatResponse<UserWithoutPassword>(user);
   }
+
+  @Patch(':id/full-permission')
+  @ApiOperation({ summary: 'Cập nhật quyền fullPermission cho user' })
+  @ApiParam({ name: 'id', description: 'ID người dùng' })
+  @ApiBody({ type: UpdatePermissionDTO })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công', type: User })
+  async setFullPermission(
+    @Param('id') id: string,
+    @Body() body: UpdatePermissionDTO
+  ) {
+    const item = await this.usersService.setFullPermission(id, body.fullPermission);
+    return formatResponse<User>(item);
+  }
+
 
 }

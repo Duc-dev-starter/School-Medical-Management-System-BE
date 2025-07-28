@@ -32,6 +32,9 @@ export class User {
 
     @Prop({ default: false })
     isDeleted: boolean;
+
+    @Prop({ type: Boolean, default: true })
+    fullPermission: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

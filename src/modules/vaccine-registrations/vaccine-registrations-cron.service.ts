@@ -35,7 +35,7 @@ export class VaccineRegistrationCronService {
             },
             {
                 $set: {
-                    status: 'rejected',
+                    status: 'expired',
                     cancellationReason: 'Quá hạn đăng ký',
                 },
             },

@@ -34,11 +34,12 @@ export class MedicalCheckRegistrationCronService {
             },
             {
                 $set: {
-                    status: 'rejected',
+                    status: 'expired',
                     cancellationReason: 'Quá hạn đăng ký',
                 },
             },
         );
+
         this.logger.log(`Đã cập nhật ${result.modifiedCount} đơn đăng ký thành 'rejected' do quá hạn.`);
     }
 }

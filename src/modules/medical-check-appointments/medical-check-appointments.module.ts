@@ -9,19 +9,23 @@ import { BullModule } from '@nestjs/bull';
 import { StudentsModule } from '../students/students.module';
 import { MailModule } from 'src/common/modules/mail.module';
 import { VaccineEventsModule } from '../vaccine-events/vaccine-events.module';
+import { HealthRecord, HealthRecordSchema } from '../health-records/health-records.schema';
+import { HealthRecordsModule } from '../health-records/health-records.module';
 
 @Module({
     imports: [
         MongooseModule.forFeature([{ name: MedicalCheckAppointment.name, schema: MedicalCheckAppointmentSchema },
         { name: Student.name, schema: StudentSchema },
         { name: MedicalCheckEvent.name, schema: MedicalCheckEventSchema },
+        { name: HealthRecord.name, schema: HealthRecordSchema },
         ]),
         BullModule.registerQueue({
             name: 'mailQueue',
         }),
         StudentsModule,
         MailModule,
-        VaccineEventsModule
+        VaccineEventsModule,
+        HealthRecordsModule
     ],
     controllers: [MedicalCheckAppoimentsController],
     providers: [MedicalCheckAppointmentsService],

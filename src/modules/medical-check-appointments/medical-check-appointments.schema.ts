@@ -12,59 +12,42 @@ export class MedicalCheckAppointment {
     @Prop({ type: Types.ObjectId, ref: 'MedicalCheckEvent', required: true })
     eventId: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: 'User' }) // người kiểm tra (ví dụ: y tá trường)
+    @Prop({ type: Types.ObjectId, ref: 'User' })
     checkedBy?: Types.ObjectId;
 
-    @Prop()
-    height?: number; // chiều cao (cm)
+    @Prop() height?: number;
+    @Prop() weight?: number;
+    @Prop() bmi?: number; // chỉ số BMI
 
-    @Prop()
-    weight?: number; // cân nặng (kg)
+    @Prop() visionLeft?: number;
+    @Prop() visionRight?: number;
+    @Prop() bloodPressure?: string;
+    @Prop() heartRate?: number;
 
-    @Prop()
-    visionLeft?: number; // thị lực mắt trái (vd: 1.0)
+    @Prop() dentalHealth?: string; // tình trạng răng miệng
+    @Prop() entHealth?: string;    // tai mũi họng
+    @Prop() skinCondition?: string; // da liễu
 
-    @Prop()
-    visionRight?: number; // thị lực mắt phải
+    @Prop({ default: true })
+    isHealthy: boolean;
 
-    @Prop()
-    bloodPressure?: string; // ví dụ: "120/80"
-
-    @Prop()
-    heartRate?: number; // nhịp tim
-
-
-    @Prop({ default: false })
-    isEligible: boolean; // đủ điều kiện tiêm hay không
-
-    @Prop()
-    reasonIfIneligible?: string;
-
-    @Prop()
-    notes?: string;
+    @Prop() reasonIfUnhealthy?: string;
+    @Prop() notes?: string;
 
     @Prop({ type: Boolean, default: false })
     isDeleted: boolean;
 
-    @Prop({ default: AppointmentStatus.Pending, enum: ['pending', 'checked', 'cancelled', "ineligible", 'medicalChecked'] })
-    status: string;
-
+    @Prop({
+        default: AppointmentStatus.Pending,
+        enum: Object.values(AppointmentStatus),
+    })
+    status: AppointmentStatus;
 
     @Prop({ required: true })
     schoolYear: string;
 
-
     @Prop({ type: Date })
     medicalCheckedAt?: Date;
-
-    @Prop({
-        enum: Object.values(PostMedicalCheckStatus),
-        default: PostMedicalCheckStatus.NotChecked,
-    })
-    postMedicalCheckStatus: PostMedicalCheckStatus;
-
-    @Prop()
-    postMedicalCheckNotes?: string;
 }
 
 export const MedicalCheckAppointmentSchema = SchemaFactory.createForClass(MedicalCheckAppointment);

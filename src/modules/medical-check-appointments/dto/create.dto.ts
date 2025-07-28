@@ -1,29 +1,7 @@
-import {
-    IsNotEmpty,
-    IsMongoId,
-    IsOptional,
-    IsNumber,
-    IsString,
-    IsBoolean,
-} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class CreateMedicalCheckAppointmentDTO {
-    @ApiProperty({ example: '64fabc123456abc123456def' })
-    @IsNotEmpty()
-    @IsMongoId()
-    studentId: string;
-
-    @ApiProperty({ example: '64facb789012abc123456abc' })
-    @IsNotEmpty()
-    @IsMongoId()
-    eventId: string;
-
-    @ApiProperty({ example: '64fadef123456abc12345678', required: false })
-    @IsOptional()
-    @IsMongoId()
-    checkedBy?: string;
-
+export class CheckMedicalCheckAppointmentDTO {
     @ApiProperty({ example: 160, required: false })
     @IsOptional()
     @IsNumber()
@@ -54,13 +32,22 @@ export class CreateMedicalCheckAppointmentDTO {
     @IsNumber()
     heartRate?: number;
 
-    @ApiProperty({ example: 'Tình trạng bình thường', required: false })
+    @ApiProperty({ example: 'Răng bình thường', required: false })
     @IsOptional()
     @IsString()
-    notes?: string;
+    dentalHealth?: string;
+
+    @ApiProperty({ example: 'Tai mũi họng tốt', required: false })
+    @IsOptional()
+    @IsString()
+    entHealth?: string;
+
+    @ApiProperty({ example: 'Da không vấn đề', required: false })
+    @IsOptional()
+    @IsString()
+    skinCondition?: string;
 
     @ApiProperty({ example: true })
-    @IsNotEmpty()
     @IsBoolean()
     isHealthy: boolean;
 
@@ -69,9 +56,8 @@ export class CreateMedicalCheckAppointmentDTO {
     @IsString()
     reasonIfUnhealthy?: string;
 
-
-    @ApiProperty({ example: '2024-2025', description: 'Năm học' })
-    @IsNotEmpty()
+    @ApiProperty({ example: 'Khám tổng quát bình thường', required: false })
+    @IsOptional()
     @IsString()
-    schoolYear: string;
+    notes?: string;
 }

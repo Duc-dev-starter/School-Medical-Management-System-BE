@@ -106,18 +106,5 @@ export class MedicalCheckAppoimentsController {
     }
 
 
-    @ApiBearerAuth()
-    @Patch(':id/post-check')
-    @ApiOperation({ summary: 'Cập nhật tình trạng sức khỏe sau khi khám' })
-    @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy lịch hẹn' })
-    @ApiResponse({ status: 400, description: 'Chưa khám y tế hoặc dữ liệu không hợp lệ' })
-    async updatePostMedicalCheck(
-        @Param('id') id: string,
-        @Body() body: UpdatePostMedicalCheckDTO,
-    ) {
-        const updated = await this.medicalCheckAppoimentService.updatePostMedicalCheckStatus(id, body);
-        return formatResponse<MedicalCheckAppointment>(updated);
-    }
 
 }

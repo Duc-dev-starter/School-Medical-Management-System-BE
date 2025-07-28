@@ -15,8 +15,12 @@ export class VaccineRegistration {
     @Prop({ type: Types.ObjectId, ref: 'VaccineEvent', required: true })
     eventId: Types.ObjectId;
 
-    @Prop({ default: 'pending', enum: ['pending', 'approved', 'rejected', 'cancelled'] })
+    @Prop({
+        default: 'pending',
+        enum: ['pending', 'approved', 'rejected', 'cancelled', 'expired']
+    })
     status: string;
+
 
     @Prop()
     cancellationReason?: string; // Lý do không đăng ký, hoặc hủy

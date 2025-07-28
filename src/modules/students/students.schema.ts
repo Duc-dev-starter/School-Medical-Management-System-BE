@@ -37,6 +37,13 @@ export class Student {
     @Prop({ type: [ParentInfoSchema], default: [] })
     parents: ParentInfo[];
 
+    @Prop({
+        required: true,
+        enum: ['active', 'graduated', 'transferred', 'reserved'],
+        default: 'active',
+    })
+    status: 'active' | 'graduated' | 'transferred' | 'reserved';
+
 
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.CLASS, required: true })
     classId: string;
