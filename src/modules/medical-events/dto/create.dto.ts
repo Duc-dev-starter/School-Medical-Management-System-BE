@@ -1,5 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString, ValidateNested, IsNumber, Min } from 'class-validator';
+import {
+    IsArray,
+    IsDateString,
+    IsEnum,
+    IsMongoId,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    ValidateNested,
+    IsNumber,
+    Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum MedicalEventStatus {
@@ -18,6 +29,12 @@ export enum LeaveMethod {
     NONE = 'none',
     PARENT_PICKUP = 'parent_pickup',
     HOSPITAL_TRANSFER = 'hospital_transfer',
+}
+
+export enum ParentContactStatus {
+    NOT_CONTACTED = 'not_contacted',
+    CONTACTING = 'contacting',
+    CONTACTED = 'contacted',
 }
 
 class MedicineUsageDto {
@@ -46,6 +63,22 @@ class MedicalSupplyUsageDto {
     quantity: number;
 }
 
+class ActionLogDto {
+    @ApiProperty({ description: 'Thời gian thực hiện (ISO)', example: '2025-07-24T10:00:00Z' })
+    @IsDateString()
+    time: string;
+
+    @ApiProperty({ description: 'Mô tả thao tác', example: 'Đo nhiệt độ 38.5°C' })
+    @IsString()
+    @IsNotEmpty()
+    description: string;
+
+    @ApiPropertyOptional({ description: 'ID người thực hiện thao tác', type: String })
+    @IsOptional()
+    @IsMongoId()
+    performedBy?: string;
+}
+
 export class CreateMedicalEventDto {
     @ApiProperty({ description: 'ID học sinh', type: String })
     @IsNotEmpty()
@@ -67,10 +100,30 @@ export class CreateMedicalEventDto {
     @IsString()
     description?: string;
 
+    @ApiPropertyOptional({ description: 'Tình trạng ban đầu của bệnh nhân' })
+    @IsOptional()
+    @IsString()
+    initialCondition?: string;
+
+    @ApiPropertyOptional({ description: 'Biện pháp sơ cứu ban đầu' })
+    @IsOptional()
+    @IsString()
+    firstAid?: string;
+
     @ApiPropertyOptional({ description: 'Hành động đã thực hiện' })
     @IsOptional()
     @IsString()
     actionTaken?: string;
+
+    @ApiPropertyOptional({
+        description: 'Danh sách các thao tác xử lý',
+        type: [ActionLogDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ActionLogDto)
+    actions?: ActionLogDto[];
 
     @ApiPropertyOptional({
         description: 'Danh sách thuốc đã dùng với số lượng',
@@ -101,6 +154,16 @@ export class CreateMedicalEventDto {
     @IsOptional()
     @IsEnum(MedicalEventStatus)
     status?: MedicalEventStatus;
+
+    @ApiPropertyOptional({ description: 'Trạng thái liên hệ phụ huynh', enum: ParentContactStatus, default: ParentContactStatus.NOT_CONTACTED })
+    @IsOptional()
+    @IsEnum(ParentContactStatus)
+    parentContactStatus?: ParentContactStatus;
+
+    @ApiPropertyOptional({ description: 'Thời gian liên hệ phụ huynh', type: String, format: 'date-time' })
+    @IsOptional()
+    @IsDateString()
+    parentContactedAt?: string;
 
     @ApiPropertyOptional({ description: 'Phương thức ra về', enum: LeaveMethod, default: LeaveMethod.NONE })
     @IsOptional()

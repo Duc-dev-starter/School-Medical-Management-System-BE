@@ -138,7 +138,12 @@ export class MedicalEventsService implements OnModuleInit {
         medicalSupplies.push(supply);
       }
     }
-    const savedEvent = await this.medicalEventModel.create(payload);
+    const dataToSave = {
+      ...payload,
+      parentContactStatus: payload.parentContactStatus || 'not_contacted',
+      actions: payload.actions || [],
+    };
+    const savedEvent = await this.medicalEventModel.create(dataToSave);
 
     // Gửi mail cho phụ huynh
     if (parent?.email && student?.fullName) {
@@ -196,6 +201,15 @@ export class MedicalEventsService implements OnModuleInit {
         <td style="padding:6px 0;">${medicalSupplies?.length ? medicalSupplies.map(s => s.name).join(', ') : '(Không có)'}</td>
       </tr>
       <tr>
+  <td style="padding:6px 0;color:#555;"><b>Các thao tác xử lý:</b></td>
+  <td style="padding:6px 0;">
+    ${payload.actions?.length
+          ? payload.actions.map(a => `- [${new Date(a.time).toLocaleString('vi-VN')}] ${a.description}`).join('<br/>')
+          : '(Không có)'}
+  </td>
+</tr>
+
+      <tr>
         <td style="padding:6px 0;color:#555;"><b>Ghi chú:</b></td>
         <td style="padding:6px 0;">${payload.notes || '(Không có ghi chú)'}</td>
       </tr>
@@ -251,6 +265,9 @@ export class MedicalEventsService implements OnModuleInit {
     if (schoolNurseId?.trim()) filters.schoolNurseId = schoolNurseId.trim();
     if (medicinesId?.length) filters.medicinesId = { $in: medicinesId.filter(Boolean) };
     if (medicalSuppliesId?.length) filters.medicalSuppliesId = { $in: medicalSuppliesId.filter(Boolean) };
+    if (params.severityLevel) filters.severityLevel = params.severityLevel;
+    if (params.parentContactStatus) filters.parentContactStatus = params.parentContactStatus;
+
 
     const totalItems = await this.medicalEventModel.countDocuments(filters);
     const results = await this.medicalEventModel
@@ -304,6 +321,12 @@ export class MedicalEventsService implements OnModuleInit {
       new: true,
       runValidators: true,
     });
+
+    if (payload.actions?.length) {
+      await this.medicalEventModel.findByIdAndUpdate(id, {
+        $push: { actions: { $each: payload.actions } },
+      });
+    }
 
     if (!updated) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Cập nhật thất bại');
     return updated;

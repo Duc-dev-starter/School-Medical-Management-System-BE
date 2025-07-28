@@ -26,7 +26,25 @@ export class MedicalEvent {
     description: string;
 
     @Prop()
+    initialCondition?: string; // tình trạng ban đầu
+
+    @Prop()
+    firstAid?: string; // sơ cứu ban đầu
+
+    @Prop()
     actionTaken: string;
+
+    @Prop({
+        type: [
+            {
+                time: { type: Date, required: true },
+                description: { type: String, required: true },
+                performedBy: { type: String, required: true },
+            }
+        ],
+        default: []
+    })
+    actions: { time: Date; description: string; performedBy: Types.ObjectId }[];
 
     @Prop({
         type: [
@@ -63,10 +81,16 @@ export class MedicalEvent {
     leaveTime: Date;
 
     @Prop()
-    pickedUpBy: string; // tên người đón nếu không phải phụ huynh trong hệ thống
+    pickedUpBy: string;
+
+    @Prop({ enum: ['not_contacted', 'contacting', 'contacted'], default: 'not_contacted' })
+    parentContactStatus: string;
+
+    @Prop()
+    parentContactedAt?: Date;
 
     @Prop({ type: [String], default: [] })
-    images: string[]; // đường dẫn ảnh phụ huynh upload
+    images: string[];
 
     @Prop()
     notes: string;
@@ -74,6 +98,7 @@ export class MedicalEvent {
     @Prop({ default: false })
     isDeleted: boolean;
 }
+
 
 export const MedicalEventSchema = SchemaFactory.createForClass(MedicalEvent);
 
