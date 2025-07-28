@@ -169,6 +169,7 @@ export class VaccineAppoimentsService implements OnModuleInit {
         if (user.role !== Role.School_Nurse) {
             throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Không thể xóa nếu không phải y tá');
         }
+
         const appo = await this.vaccineAppointmentModel.findOne({ _id: id, isDeleted: false });
         if (!appo) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy lịch hẹn');
 
@@ -178,18 +179,30 @@ export class VaccineAppoimentsService implements OnModuleInit {
         appo.isEligible = data.isEligible;
         appo.notes = data.notes;
 
+        // Lấy thông tin student + event + vaccineType
+        const [student, event] = await Promise.all([
+            this.studentModel.findById(appo.studentId)
+                .populate('parents.userId')
+                .lean(),
+            this.vaccineEventModel.findById(appo.eventId)
+                .populate('vaccineTypeId') // populate để lấy tên vaccine
+                .lean(),
+        ]);
+
+        if (!student || !event) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh hoặc sự kiện');
+        }
+
+        // Lấy tên vaccine từ vaccineType
+        const vaccineTypeName =
+            (event.vaccineTypeId as any)?.name || 'Vaccine không xác định';
+
         if (!data.isEligible) {
             appo.status = AppointmentStatus.Ineligible;
             appo.reasonIfIneligible = data.reasonIfIneligible || 'Không đủ điều kiện tiêm';
             appo.vaccinatedAt = undefined;
 
-            // Lấy thông tin student + event
-            const student = await this.studentModel.findById(appo.studentId)
-                .populate('parents.userId')
-                .lean();
-            const event = await this.vaccineEventModel.findById(appo.eventId).lean();
-
-            if (student && event && Array.isArray(student.parents)) {
+            if (Array.isArray(student.parents)) {
                 for (const parentInfo of student.parents) {
                     const parent = parentInfo.userId as any;
                     if (parent?.email) {
@@ -199,12 +212,12 @@ export class VaccineAppoimentsService implements OnModuleInit {
   <h2 style="color:#d32f2f;">Học sinh ${student.fullName} không đủ điều kiện tiêm vaccine</h2>
   <table style="width:100%;border-collapse:collapse;margin:16px 0;">
     <tr>
-      <td style="padding:6px 0;color:#555;"><b>Vaccine:</b></td>
-      <td style="padding:6px 0;">${event.vaccineName}</td>
+      <td style="padding:6px 0;color:#555;"><b>Loại vaccine:</b></td>
+      <td style="padding:6px 0;">${vaccineTypeName}</td>
     </tr>
     <tr>
       <td style="padding:6px 0;color:#555;"><b>Thời gian sự kiện:</b></td>
-      <td style="padding:6px 0;">${event.eventDate}</td>
+      <td style="padding:6px 0;">${formatDateTime(event.eventDate)}</td>
     </tr>
     <tr>
       <td style="padding:6px 0;color:#555;"><b>Lý do:</b></td>
@@ -223,8 +236,7 @@ export class VaccineAppoimentsService implements OnModuleInit {
                     }
                 }
             }
-        }
-        else {
+        } else {
             if (data.vaccinatedAt) {
                 appo.status = AppointmentStatus.Vaccinated;
                 appo.vaccinatedAt = data.vaccinatedAt;
@@ -239,6 +251,7 @@ export class VaccineAppoimentsService implements OnModuleInit {
         await appo.save();
         return appo;
     }
+
 
     async updatePostVaccinationStatus(
         id: string,
@@ -268,14 +281,23 @@ export class VaccineAppoimentsService implements OnModuleInit {
             postVaccinationNotes: body.postVaccinationNotes,
         });
 
-        // Lấy lại thông tin student và event
-        const student = await this.studentModel
-            .findById(appo.studentId)
-            .populate('parents.userId')
-            .lean() as any;
-        const event = await this.vaccineEventModel.findById(appo.eventId).lean();
+        // Lấy lại thông tin student và event + vaccineType
+        const [student, event] = await Promise.all([
+            this.studentModel
+                .findById(appo.studentId)
+                .populate('parents.userId')
+                .lean() as any,
+            this.vaccineEventModel
+                .findById(appo.eventId)
+                .populate('vaccineTypeId') // Populate để lấy tên vaccine
+                .lean(),
+        ]);
 
         if (student && Array.isArray(student.parents) && event) {
+            // Lấy tên vaccine từ vaccineType
+            const vaccineTypeName =
+                (event.vaccineTypeId as any)?.name || 'Vaccine không xác định';
+
             for (const parentInfo of student.parents) {
                 const parent = parentInfo.userId;
                 if (parent?.email) {
@@ -292,8 +314,8 @@ export class VaccineAppoimentsService implements OnModuleInit {
       <td style="padding:6px 8px;color:#333;">${student.fullName}</td>
     </tr>
     <tr>
-      <td style="padding:6px 8px;color:#555;"><b>Vaccine:</b></td>
-      <td style="padding:6px 8px;color:#333;">${event.vaccineName}</td>
+      <td style="padding:6px 8px;color:#555;"><b>Loại vaccine:</b></td>
+      <td style="padding:6px 8px;color:#333;">${vaccineTypeName}</td>
     </tr>
     <tr>
       <td style="padding:6px 8px;color:#555;"><b>Sự kiện:</b></td>
@@ -342,5 +364,6 @@ export class VaccineAppoimentsService implements OnModuleInit {
 
         return await this.vaccineAppointmentModel.findById(id);
     }
+
 
 }

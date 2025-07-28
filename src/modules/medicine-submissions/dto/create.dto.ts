@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsMongoId, IsNotEmpty, IsOptional, IsString, IsArray, ValidateNested, IsNumber, IsDateString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsOptional, IsString, IsArray, ValidateNested, IsNumber, IsDateString, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TIME_SHIFT_VALUES, TimeShiftType } from 'src/common/enums/medicine.enum';
 
 export class MedicineSubmissionDetailDTO {
     @ApiProperty({ description: 'Tên thuốc' })
@@ -28,18 +29,22 @@ export class MedicineSubmissionDetailDTO {
     @IsNotEmpty()
     timesPerDay: number;
 
-    @ApiProperty({ description: 'Các khung giờ uống', example: ['08:00', '12:00', '20:00'] })
+    @ApiProperty({
+        description: 'Các ca uống trong ngày',
+        example: ['morning', 'noon'],
+        enum: TIME_SHIFT_VALUES,
+        isArray: true,
+    })
     @IsArray()
-    @IsString({ each: true })
-    timeSlots: string[];
+    @IsEnum(TIME_SHIFT_VALUES, { each: true })
+    timeShifts: TimeShiftType[];
 
     @ApiProperty({ description: 'Ghi chú', example: 'Uống sau ăn' })
     @IsString()
     @IsOptional()
     note?: string;
 
-
-    @ApiProperty({ description: 'Lý do', example: 'Uống sau ăn' })
+    @ApiProperty({ description: 'Lý do', example: 'Uống khi sốt' })
     @IsString()
     @IsOptional()
     reason?: string;

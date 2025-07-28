@@ -34,6 +34,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import * as redisStore from 'cache-manager-redis-store';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
+import { VaccineType } from './modules/vaccine-type/vaccine-types.schema';
 
 
 
@@ -59,6 +60,7 @@ import { ChatbotModule } from './modules/chatbot/chatbot.module';
     MedicalCheckRegistrationsModule,
     MedicalCheckAppointmentsModule,
     AppointmentsModule,
+    VaccineType,
     ChatbotModule,
     MailModule,
     CacheModule.register({

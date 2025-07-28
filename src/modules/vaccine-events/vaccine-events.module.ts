@@ -14,6 +14,10 @@ import { Grade, GradeSchema } from '../grades/grades.schema';
 import { GradesModule } from '../grades/grades.module';
 import { VaccineRegistration, VaccineRegistrationSchema } from '../vaccine-registrations/vaccine-registrations.schema';
 import { VaccineRegistrationsModule } from '../vaccine-registrations/vaccine-registrations.module';
+import { VaccineType, VaccineTypeSchema } from '../vaccine-type/vaccine-types.schema';
+import { HealthRecord, HealthRecordSchema } from '../health-records/health-records.schema';
+import { VaccineTypesModule } from '../vaccine-type/vaccine-types.module';
+import { HealthRecordsModule } from '../health-records/health-records.module';
 
 @Module({
     imports: [
@@ -23,6 +27,8 @@ import { VaccineRegistrationsModule } from '../vaccine-registrations/vaccine-reg
         { name: Class.name, schema: ClassSchema },
         { name: Grade.name, schema: GradeSchema },
         { name: VaccineRegistration.name, schema: VaccineRegistrationSchema },
+        { name: VaccineType.name, schema: VaccineTypeSchema },
+        { name: HealthRecord.name, schema: HealthRecordSchema },
         ]),
         BullModule.registerQueue({
             name: 'mailQueue',
@@ -31,7 +37,9 @@ import { VaccineRegistrationsModule } from '../vaccine-registrations/vaccine-reg
         StudentsModule,
         MailModule,
         GradesModule,
-        VaccineRegistrationsModule
+        VaccineRegistrationsModule,
+        VaccineTypesModule,
+        HealthRecordsModule
     ],
     controllers: [VaccineEventsController],
     providers: [VaccineEventServices],

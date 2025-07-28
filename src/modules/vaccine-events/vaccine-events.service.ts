@@ -15,6 +15,8 @@ import { Grade, GradeDocument } from '../grades/grades.schema';
 import { VaccineRegistration } from '../vaccine-registrations/vaccine-registrations.schema';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
+import { HealthRecord, HealthRecordDocument } from '../health-records/health-records.schema';
+import { VaccineType } from '../vaccine-type/vaccine-types.schema';
 
 @Injectable()
 export class VaccineEventServices implements OnModuleInit {
@@ -24,6 +26,8 @@ export class VaccineEventServices implements OnModuleInit {
         @InjectModel(User.name) private userModel: Model<UserDocument>,
         @InjectModel(Class.name) private classModel: Model<ClassDocument>,
         @InjectModel(Grade.name) private gradeModel: Model<GradeDocument>,
+        @InjectModel(VaccineType.name) private vaccineTypeModel: Model<GradeDocument>,
+        @InjectModel(HealthRecord.name) private healthRecordModel: Model<HealthRecordDocument>,
         @InjectModel(VaccineRegistration.name) private vaccineRegistrationModel: Model<VaccineRegistration>,
         @InjectQueue('mailQueue') private readonly mailQueue: Queue,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -80,65 +84,70 @@ export class VaccineEventServices implements OnModuleInit {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Lớp không tồn tại');
         }
 
+        // Khởi tạo sự kiện vaccine với typeId
         const event = new this.vaccineEventModel({
             ...payload,
             gradeId: new Types.ObjectId(payload.gradeId),
+            vaccineTypeId: new Types.ObjectId(payload.vaccineTypeId),
         });
 
         const savedEvent = await event.save();
-
         const gradeId = new Types.ObjectId(payload.gradeId);
 
-        const classes = await this.classModel
-            .find({ gradeId })
-            .lean();
-        const classIds = classes.map(cls => cls._id);
+        // Lấy danh sách học sinh trong grade
+        const classes = await this.classModel.find({ gradeId }).lean();
+        const classIds = classes.map((cls) => cls._id);
 
         const students = await this.studentModel
             .find({ classId: { $in: classIds } })
             .populate('parents.userId')
             .lean();
 
+        const vaccineType = await this.vaccineTypeModel.findById(payload.vaccineTypeId).lean();
+
         for (const student of students) {
+            // Kiểm tra HealthRecord của học sinh đã tiêm vaccine này chưa
+            const healthRecord = await this.healthRecordModel.findOne({ studentId: student._id }).lean();
+            const alreadyVaccinated =
+                healthRecord?.vaccinationHistory?.some(
+                    (v) => v.vaccineTypeId?.toString() === payload.vaccineTypeId.toString()
+                );
+
+            if (alreadyVaccinated) {
+                console.log(`❌ Học sinh ${student.fullName} đã tiêm vaccine type ${payload.vaccineTypeId}, không gửi mail.`);
+                continue;
+            }
+
             if (Array.isArray(student.parents)) {
                 for (const parentInfo of student.parents) {
                     const parent = parentInfo.userId;
                     if (parent && typeof parent === 'object' && 'email' in parent && parent.email) {
                         const subject = 'Xác nhận tiêm vaccine cho học sinh';
                         const html = `
-  <div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
-    <h2 style="color:#388e3c;">Sự kiện tiêm vaccine: ${payload.title}</h2>
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-      <tr>
-        <td style="padding:6px 0;color:#555;"><b>Vaccine:</b></td>
-        <td style="padding:6px 0;">${payload.vaccineName}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
-        <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
-        <td style="padding:6px 0;">${payload.location}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
-        <td style="padding:6px 0;">${student.fullName}</td>
-      </tr>
-    </table>
-    <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
-      <b>Vui lòng xác nhận đồng ý tiêm vaccine cho học sinh.</b>
-    </p>
-    <div style="text-align:center;margin-bottom:8px;">
-      <a href="http://localhost:3000/vaccine-registration"
-        style="display:inline-block;padding:12px 24px;background:#388e3c;color:#fff;text-decoration:none;font-weight:bold;border-radius:6px;font-size:16px;">
-        Xác nhận tiêm vaccine
-      </a>
-    </div>
-    <p style="font-size:12px;color:#888;text-align:center;">Nếu nút không hiển thị, hãy copy link sau vào trình duyệt:<br>
-      <a href="http://localhost:3000/vaccine-registration" style="color:#388e3c;">http://localhost:3000/vaccine-registration</a>
-    </p>
-  </div>
+<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#f9f9f9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #e0e0e0;">
+  <h2 style="color:#388e3c;">Sự kiện tiêm vaccine: ${payload.title}</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Loại vaccine:</b></td>
+      <td style="padding:6px 0;">${vaccineType?.name || 'Không xác định'}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
+      <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
+      <td style="padding:6px 0;">${payload.location}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
+      <td style="padding:6px 0;">${student.fullName}</td>
+    </tr>
+  </table>
+  <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
+    <b>Vui lòng xác nhận đồng ý tiêm vaccine cho học sinh.</b>
+  </p>
+</div>
 `;
 
                         await this.mailQueue.add('send-vaccine-mail', {
@@ -147,6 +156,7 @@ export class VaccineEventServices implements OnModuleInit {
                             html,
                         });
 
+                        // Tạo đăng ký vaccine
                         await this.vaccineRegistrationModel.create({
                             parentId: parent._id,
                             studentId: student._id,
@@ -158,6 +168,7 @@ export class VaccineEventServices implements OnModuleInit {
                 }
             }
         }
+
         return savedEvent;
     }
 

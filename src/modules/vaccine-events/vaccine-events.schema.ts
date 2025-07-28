@@ -20,8 +20,8 @@ export class VaccineEvent {
     @Prop()
     description?: string;
 
-    @Prop({ required: true })
-    vaccineName: string;
+    @Prop({ type: Types.ObjectId, ref: 'VaccineType', required: true })
+    vaccineTypeId: string;
 
     @Prop({ required: true })
     location: string;

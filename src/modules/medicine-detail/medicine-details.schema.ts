@@ -1,21 +1,20 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { SLOT_STATUS_VALUES, SlotStatusType, TIME_SHIFT_VALUES, TimeShiftType } from "src/common/enums/medicine.enum";
 
-
-export type SlotStatusType = 'pending' | 'taken' | 'missed' | 'compensated';
 
 @Schema({ _id: true })
 export class SlotStatus {
-    @Prop({ required: true, type: Date })
-    time: Date; // ISO string
+    @Prop({ required: true, enum: TIME_SHIFT_VALUES })
+    shift: TimeShiftType;
 
-    @Prop({ required: true, enum: ['pending', 'taken', 'missed', 'compensated'], default: 'pending' })
+    @Prop({ required: true, enum: SLOT_STATUS_VALUES, default: 'pending' })
     status: SlotStatusType;
 
     @Prop()
     image?: string;
 
     @Prop()
-    note?: string; // Ghi chú uống trễ bao nhiêu phút nếu là compensated
+    note?: string; // Ghi chú nếu uống trễ
 }
 export const SlotStatusSchema = SchemaFactory.createForClass(SlotStatus);
 
@@ -36,8 +35,8 @@ export class MedicineSubmissionDetail {
     @Prop({ required: true })
     timesPerDay: number;
 
-    @Prop({ type: [Date], required: true })
-    timeSlots: Date[]; // Danh sách các khung giờ uống (ISO)
+    @Prop({ type: [String], enum: TIME_SHIFT_VALUES, required: true })
+    timeShifts: TimeShiftType[];
 
     @Prop()
     note?: string;

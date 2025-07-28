@@ -26,9 +26,8 @@ import { CustomHttpException } from 'src/common/exceptions';
 
 import { Public } from 'src/common/decorators/public.decorator';
 import { MedicalCheckAppointmentsService } from './medical-check-appointments.service';
-import { CheckMedicalCheckAppointmentDTO, CreateMedicalCheckAppointmentDTO, SearchMedicalCheckAppointmentDTO, UpdateMedicalCheckAppointmentDTO } from './dto';
+import { CreateMedicalCheckAppointmentDTO, CheckMedicalCheckAppointmentDTO, SearchMedicalCheckAppointmentDTO, UpdateMedicalCheckAppointmentDTO } from './dto';
 import { MedicalCheckAppointment } from './medical-check-appointments.schema';
-import { UpdatePostMedicalCheckDTO } from './dto/checkMedicalCheck.dto';
 
 @ApiTags('Medical Check Appoiment')
 @Controller('api/medical-check-appoinments')

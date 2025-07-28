@@ -13,15 +13,15 @@ export class CreateVaccineEventDTO {
     @IsString()
     gradeId: string;
 
+    @ApiProperty({ example: '64faeaaeb44c9e2f12c157b2', description: 'ID loại vaccine (vaccineTypeId)' })
+    @IsNotEmpty()
+    @IsString()
+    vaccineTypeId: string;
+
     @ApiProperty({ example: 'Sự kiện tiêm chủng định kỳ cho học sinh khối 1', description: 'Mô tả sự kiện', required: false })
     @IsOptional()
     @IsString()
     description?: string;
-
-    @ApiProperty({ example: 'Vaccine cúm mùa', description: 'Tên vaccine' })
-    @IsNotEmpty()
-    @IsString()
-    vaccineName: string;
 
     @ApiProperty({ example: 'Trường Tiểu học ABC', description: 'Địa điểm tiêm chủng' })
     @IsNotEmpty()
@@ -58,7 +58,6 @@ export class CreateVaccineEventDTO {
     @IsOptional()
     @IsEnum(EventStatus)
     status?: EventStatus;
-
 
     @ApiProperty({ example: '2024-2025', description: 'Năm học' })
     @IsNotEmpty()

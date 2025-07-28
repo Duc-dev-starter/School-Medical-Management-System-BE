@@ -260,7 +260,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
 
             const [student, event] = await Promise.all([
                 this.studentModel.findById(reg.studentId).populate('parents.userId').lean(),
-                this.vaccineEventModel.findById(reg.eventId).lean(),
+                this.vaccineEventModel.findById(reg.eventId).populate('vaccineTypeId').lean() as any,
             ]);
 
             console.log('Student:', student);
@@ -277,7 +277,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
                               <table style="width:100%;border-collapse:collapse;margin:16px 0;">
                                 <tr>
                                   <td style="padding:6px 0;color:#555;"><b>Vaccine:</b></td>
-                                  <td style="padding:6px 0;">${event.vaccineName}</td>
+                                 <td style="padding:6px 0;">${event.typeId?.name || ''}</td>
                                 </tr>
                                 <tr>
                                   <td style="padding:6px 0;color:#555;"><b>Thời gian đăng kí:</b></td>
@@ -318,7 +318,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
 
             const [student, event] = await Promise.all([
                 this.studentModel.findById(reg.studentId).populate('parents.userId').lean(),
-                this.vaccineEventModel.findById(reg.eventId).lean(),
+                this.vaccineEventModel.findById(reg.eventId).populate('vaccineTypeId').lean() as any,
             ]);
 
             if (student && Array.isArray(student.parents) && event) {
@@ -329,7 +329,7 @@ export class VaccineRegistrationsServices implements OnModuleInit {
                         const html = `
                             <div style="font-family: Arial, sans-serif;">
                               <h3>Đơn đăng ký tiêm vaccine cho học sinh ${student.fullName} đã bị hủy.</h3>
-                              <p>Sự kiện: ${event.title || event.vaccineName}</p>
+                              <p>Sự kiện: ${event.title || event.typeId?.name}</p>
                               <p>Lý do: ${reg.cancellationReason}</p>
                               <p>Nhà trường xin lỗi vì sự bất tiện này.</p>
                             </div>

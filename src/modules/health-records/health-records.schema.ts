@@ -43,8 +43,20 @@ export class HealthRecord {
     @Prop()
     weight: number; // cân nặng
 
-    @Prop([String])
-    vaccinationHistory: string[]; // các mũi đã tiêm
+    @Prop([{
+        type: {
+            vaccineTypeId: { type: Types.ObjectId, ref: 'VaccineType', required: true },
+            injectedAt: { type: Date, required: true },
+            provider: String,
+            note: String,
+        }
+    }])
+    vaccinationHistory: {
+        vaccineTypeId: Types.ObjectId;
+        injectedAt: Date;
+        provider?: string;
+        note?: string;
+    }[];// các mũi đã tiêm
 
     @Prop({ required: true })
     schoolYear: string;

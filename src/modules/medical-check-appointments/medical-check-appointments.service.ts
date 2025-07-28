@@ -26,7 +26,6 @@ import { AppointmentStatus, Role } from 'src/common/enums';
 import { IUser } from '../users/users.interface';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { UpdatePostMedicalCheckDTO } from './dto/checkMedicalCheck.dto';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Student, StudentDocument } from '../students/students.schema';

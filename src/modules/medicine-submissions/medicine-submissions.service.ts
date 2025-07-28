@@ -79,9 +79,16 @@ export class MedicineSubmissionsService implements OnModuleInit {
             studentId: new Types.ObjectId(payload.studentId),
             schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
             medicines: payload.medicines.map((med) => ({
-                ...med,
-                slotStatus: (med.timeSlots || []).map(time => ({
-                    time: new Date(time),
+                name: med.name,
+                dosage: med.dosage,
+                usageInstructions: med.usageInstructions,
+                quantity: med.quantity,
+                timesPerDay: med.timesPerDay,
+                timeShifts: med.timeShifts,
+                note: med.note,
+                reason: med.reason,
+                slotStatus: (med.timeShifts || []).map(shift => ({
+                    shift,
                     status: 'pending'
                 }))
             })),
@@ -96,6 +103,7 @@ export class MedicineSubmissionsService implements OnModuleInit {
 
         return newMedicineSubmission;
     }
+
 
     async findOne(id: string): Promise<any> {
         if (!id) {
@@ -287,28 +295,34 @@ export class MedicineSubmissionsService implements OnModuleInit {
             throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Chỉ y tá mới được cập nhật');
         }
 
-        const submission = await this.medicineSubmissionModel.findOne({ _id: submissionId, isDeleted: false });
-        if (!submission) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy phiếu uống thuốc');
+        const submission = await this.medicineSubmissionModel.findOne({
+            _id: submissionId,
+            isDeleted: false,
+        });
+        if (!submission) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy phiếu uống thuốc');
+        }
 
-        // Tìm đúng detail
+        // --- Tìm đúng thuốc ---
         const detail = submission.medicines.find(
             (d) => (d as any)._id?.toString() === data.medicineDetailId
         );
+        if (!detail) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy loại thuốc');
+        }
 
-        if (!detail) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy loại thuốc');
+        // --- Tìm slot theo shift ---
+        const slot = detail.slotStatus.find((s) => s.shift === data.shift);
+        if (!slot) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy ca uống thuốc');
+        }
 
-        const inputTime = new Date(data.time);
-        const slot = detail.slotStatus.find((s) => {
-            const slotTime = new Date(s.time);
-            const diffMs = Math.abs(slotTime.getTime() - inputTime.getTime());
-            return diffMs <= 10 * 60 * 1000; // 10 phút (600 000 ms)
-        });
-        if (!slot) throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy khung giờ uống thuốc');
-
+        // --- Kiểm tra logic ---
         if (data.status === 'compensated' && !data.note) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Compensated phải có ghi chú');
         }
 
+        // --- Cập nhật slot ---
         slot.status = data.status;
         if (data.note) slot.note = data.note;
         if (data.image) slot.image = data.image;
@@ -316,4 +330,5 @@ export class MedicineSubmissionsService implements OnModuleInit {
         await submission.save();
         return submission;
     }
+
 }
