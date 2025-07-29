@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsArray, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsArray, IsEnum, IsBooleanString } from 'class-validator';
 import { PaginationRequestModel } from 'src/common/models';
 import { ParentContactStatus, SeverityLevel } from './create.dto';
 
@@ -46,4 +46,13 @@ export class SearchMedicalEventDTO extends PaginationRequestModel {
     @IsOptional()
     @IsEnum(ParentContactStatus)
     parentContactStatus?: ParentContactStatus;
+
+    @IsOptional()
+    @IsBooleanString()
+    @ApiProperty({
+        description: 'Trạng thái xóa (true = đã xóa, false = chưa xóa)',
+        required: false,
+        example: 'false',
+    })
+    isDeleted?: string;
 }

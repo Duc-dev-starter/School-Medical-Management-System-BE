@@ -1,6 +1,6 @@
 // src/vaccine/dto/search-vaccine-appointment.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsMongoId, IsBoolean, IsString } from 'class-validator';
+import { IsOptional, IsMongoId, IsBoolean, IsString, IsBooleanString } from 'class-validator';
 import { PaginationRequestModel } from 'src/common/models';
 
 export class SearchVaccineAppointmentDTO extends PaginationRequestModel {
@@ -40,5 +40,14 @@ export class SearchVaccineAppointmentDTO extends PaginationRequestModel {
     @IsOptional()
     @IsString()
     status?: 'pending' | 'checked' | 'cancelled' | "ineligible" | 'vaccinated';
+
+    @IsOptional()
+    @IsBooleanString()
+    @ApiProperty({
+        description: 'Trạng thái xóa (true = đã xóa, false = chưa xóa)',
+        required: false,
+        example: 'false',
+    })
+    isDeleted?: string;
 
 }

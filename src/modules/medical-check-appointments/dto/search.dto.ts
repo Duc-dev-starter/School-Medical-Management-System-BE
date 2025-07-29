@@ -1,4 +1,4 @@
-import { IsOptional, IsMongoId, IsBoolean, IsString } from 'class-validator';
+import { IsOptional, IsMongoId, IsBoolean, IsString, IsBooleanString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationRequestModel } from 'src/common/models';
 
@@ -41,5 +41,14 @@ export class SearchMedicalCheckAppointmentDTO extends PaginationRequestModel {
     @IsOptional()
     @IsString()
     status?: 'pending' | 'checked' | 'cancelled' | "ineligible" | 'medicalChecked';
+
+    @IsOptional()
+    @IsBooleanString()
+    @ApiProperty({
+        description: 'Trạng thái xóa (true = đã xóa, false = chưa xóa)',
+        required: false,
+        example: 'false',
+    })
+    isDeleted?: string;
 }
 

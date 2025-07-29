@@ -174,8 +174,12 @@ export class UsersService {
 
 
   async searchUsers(params: SearchUserDTO) {
-    const { pageNum, pageSize, query, role } = params;
+    const { pageNum, pageSize, query, role, isDeleted } = params;
     const filters: any = { isDeleted: false };
+
+    if (isDeleted === 'true') filters.isDeleted = true;
+    if (isDeleted === 'false') filters.isDeleted = false;
+
 
     filters.role = { $nin: ['admin', 'manager'] };
     if (role) filters.role = role;

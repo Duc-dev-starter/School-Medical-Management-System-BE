@@ -194,8 +194,12 @@ export class MedicineSubmissionsService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<any>;
         }
 
-        const { pageNum, pageSize, query, parentId, status, studentId, schoolNurseId } = params;
+        const { pageNum, pageSize, query, parentId, status, studentId, schoolNurseId, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
+
 
         if (query?.trim()) {
             filters.$or = [

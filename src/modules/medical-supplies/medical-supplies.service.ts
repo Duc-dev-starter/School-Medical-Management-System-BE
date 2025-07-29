@@ -100,8 +100,12 @@ export class MedicalSuppliesService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<MedicalSupply>;
         }
 
-        const { pageNum, pageSize, query, supplier } = params;
+        const { pageNum, pageSize, query, supplier, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
+
 
         if (query?.trim()) {
             filters.name = { $regex: query, $options: 'i' };

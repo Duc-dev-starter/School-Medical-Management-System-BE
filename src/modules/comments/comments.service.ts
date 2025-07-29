@@ -149,8 +149,11 @@ export class CommentsService implements OnModuleInit {
       return cached as SearchPaginationResponseModel<Comment>;
     }
 
-    const { pageNum, pageSize, blogId, userId, query } = params;
+    const { pageNum, pageSize, blogId, userId, query, isDeleted } = params;
     const filters: any = { isDeleted: false };
+
+    if (isDeleted === 'true') filters.isDeleted = true;
+    if (isDeleted === 'false') filters.isDeleted = false;
 
     if (blogId) {
       filters.blogId = blogId;

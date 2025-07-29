@@ -90,7 +90,8 @@ export class HealthRecordsService implements OnModuleInit {
             return cached as HealthRecord;
         }
 
-        const record = await this.healthRecordModel.findById(id).lean();
+        const record = await this.healthRecordModel.findOne({ _id: id, isDeleted: false }).lean();
+
         if (!record) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
         }
@@ -128,8 +129,11 @@ export class HealthRecordsService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<HealthRecord>;
         }
 
-        const { pageNum, pageSize, query, studentId, schoolYear } = params;
-        const filters: any = {};
+        const { pageNum, pageSize, query, studentId, schoolYear, isDeleted } = params;
+        const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
 
         if (query?.trim()) {
             filters.studentName = { $regex: query, $options: 'i' };
@@ -176,7 +180,7 @@ export class HealthRecordsService implements OnModuleInit {
     }
 
     async findOneByStudentAndSchoolYear(studentId: string, schoolYear: string): Promise<HealthRecord> {
-        const record = await this.healthRecordModel.findOne({ studentId, schoolYear });
+        const record = await this.healthRecordModel.findOne({ studentId, schoolYear, isDeleted: false });
         if (!record) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
         }

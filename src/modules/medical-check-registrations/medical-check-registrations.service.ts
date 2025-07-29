@@ -104,8 +104,11 @@ export class MedicalCheckRegistrationsService implements OnModuleInit {
     }
 
     async findAll(params: SearchMedicalCheckRegistrationDTO) {
-        const { pageNum, pageSize, query, eventId, status, studentId, parentId } = params;
-        const filters: any = {};
+        const { pageNum, pageSize, query, eventId, status, studentId, parentId, isDeleted } = params;
+        const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
 
         if (query?.trim()) {
             filters.eventName = { $regex: query, $options: 'i' };

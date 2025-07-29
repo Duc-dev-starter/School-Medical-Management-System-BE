@@ -188,8 +188,11 @@ export class BlogsService implements OnModuleInit {
       return cached;
     }
 
-    const { pageNum, pageSize, query, categoryId, userId } = params;
+    const { pageNum, pageSize, query, categoryId, userId, isDeleted } = params;
     const filters: any = { isDeleted: false };
+
+    if (isDeleted === 'true') filters.isDeleted = true;
+    if (isDeleted === 'false') filters.isDeleted = false;
 
     if (query?.trim()) {
       filters.$or = [

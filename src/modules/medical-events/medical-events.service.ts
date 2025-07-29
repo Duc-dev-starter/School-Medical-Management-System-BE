@@ -256,8 +256,12 @@ export class MedicalEventsService implements OnModuleInit {
       return cached;
     }
 
-    const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId, parentId } = params;
+    const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId, parentId, isDeleted } = params;
     const filters: any = { isDeleted: false };
+
+    if (isDeleted === 'true') filters.isDeleted = true;
+    if (isDeleted === 'false') filters.isDeleted = false;
+
 
     if (query?.trim()) filters.eventName = { $regex: query, $options: 'i' };
     if (studentId?.trim()) filters.studentId = studentId.trim();

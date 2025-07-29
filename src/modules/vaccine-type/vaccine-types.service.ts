@@ -97,8 +97,12 @@ export class VaccineTypesService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<VaccineType>;
         }
 
-        const { pageNum, pageSize, query } = params;
+        const { pageNum, pageSize, query, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
+
         if (query?.trim()) {
             filters.$or = [
                 { code: { $regex: query, $options: 'i' } },

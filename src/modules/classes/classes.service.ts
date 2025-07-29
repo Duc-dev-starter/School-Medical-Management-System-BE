@@ -154,8 +154,11 @@ export class ClassesService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<IClassWithGradeWithCount>;
         }
 
-        const { pageNum, pageSize, query, schoolYear } = params;
+        const { pageNum, pageSize, query, schoolYear, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
         if (query?.trim()) {
             filters.name = { $regex: query, $options: 'i' };
         }

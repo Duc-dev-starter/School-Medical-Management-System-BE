@@ -129,8 +129,12 @@ export class VaccineRegistrationsServices implements OnModuleInit {
             return cached as SearchPaginationResponseModel<VaccineRegistration>;
         }
 
-        const { pageNum, pageSize, eventId, parentId, studentId, query, status } = params;
+        const { pageNum, pageSize, eventId, parentId, studentId, query, status, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
+
         if (query?.trim()) {
             filters.$or = [
                 { cancellationReason: { $regex: query, $options: 'i' } },

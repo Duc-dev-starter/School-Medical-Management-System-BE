@@ -197,8 +197,12 @@ export class StudentsService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<any>;
         }
 
-        const { pageNum, pageSize, query, classId, parentId } = params;
+        const { pageNum, pageSize, query, classId, parentId, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
+
         if (query?.trim()) {
             filters.fullName = { $regex: query, $options: 'i' };
         }

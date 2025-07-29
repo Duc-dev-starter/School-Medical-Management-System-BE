@@ -183,8 +183,11 @@ export class MedicalCheckEventsService {
             return cached;
         }
 
-        const { pageNum, pageSize, query, studentId, gradeId, schoolYear, status } = params;
+        const { pageNum, pageSize, query, studentId, gradeId, schoolYear, status, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
 
         if (query?.trim()) {
             filters.title = { $regex: query, $options: 'i' };

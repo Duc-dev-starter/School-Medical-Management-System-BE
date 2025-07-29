@@ -110,8 +110,11 @@ export class AppointmentService {
             return cached;
         }
 
-        const { pageNum, pageSize, query, parentId, studentId, schoolNurseId, status, type } = params;
-        const filters: any = {};
+        const { pageNum, pageSize, query, parentId, studentId, schoolNurseId, status, type, isDeleted } = params;
+        const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
 
         if (query?.trim()) {
             filters.reason = { $regex: query, $options: 'i' };

@@ -112,8 +112,12 @@ export class VaccineAppoimentsService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<VaccineAppointment>;
         }
 
-        const { pageNum, pageSize, query, eventId, studentId, checkBy, schoolYear, status } = params;
+        const { pageNum, pageSize, query, eventId, studentId, checkBy, schoolYear, status, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
+
         if (query?.trim()) {
             filters.bloodPressure = { $regex: query, $options: 'i' };
         }

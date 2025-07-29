@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsBooleanString } from 'class-validator';
 import { PaginationRequestModel } from 'src/common/models';
 
 export class SearchVaccineTypeDTO extends PaginationRequestModel {
@@ -10,4 +10,13 @@ export class SearchVaccineTypeDTO extends PaginationRequestModel {
     @IsOptional()
     @IsString()
     query?: string;
+
+    @IsOptional()
+    @IsBooleanString()
+    @ApiProperty({
+        description: 'Trạng thái xóa (true = đã xóa, false = chưa xóa)',
+        required: false,
+        example: 'false',
+    })
+    isDeleted?: string;
 }

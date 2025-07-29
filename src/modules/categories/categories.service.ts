@@ -97,8 +97,11 @@ export class CategoriesService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<Category>;
         }
 
-        const { pageNum, pageSize, query } = params;
+        const { pageNum, pageSize, query, isDeleted } = params;
         const filters: any = { isDeleted: false };
+
+        if (isDeleted === 'true') filters.isDeleted = true;
+        if (isDeleted === 'false') filters.isDeleted = false;
         if (query?.trim()) {
             filters.name = { $regex: query, $options: 'i' };
         }
