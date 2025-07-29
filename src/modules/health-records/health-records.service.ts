@@ -90,7 +90,7 @@ export class HealthRecordsService implements OnModuleInit {
             return cached as HealthRecord;
         }
 
-        const record = await this.healthRecordModel.findById(id);
+        const record = await this.healthRecordModel.findById(id).lean();
         if (!record) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
         }
