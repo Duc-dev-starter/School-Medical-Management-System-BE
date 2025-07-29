@@ -1,9 +1,40 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+    IsArray,
+    IsDateString,
+    IsMongoId,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
+
+class VaccinationHistoryDto {
+    @ApiProperty({ description: 'ID loại vaccine', example: '64faeaaeb44c9e2f12c157b1' })
+    @IsNotEmpty()
+    @IsMongoId()
+    vaccineTypeId: string;
+
+    @ApiProperty({ description: 'Ngày tiêm', example: '2025-07-29T05:06:33.837Z' })
+    @IsNotEmpty()
+    @IsDateString()
+    injectedAt: string;
+
+    @ApiPropertyOptional({ description: 'Nhà cung cấp vaccine', example: 'Bệnh viện XYZ' })
+    @IsOptional()
+    @IsString()
+    provider?: string;
+
+    @ApiPropertyOptional({ description: 'Ghi chú', example: 'Tiêm mũi thứ 2' })
+    @IsOptional()
+    @IsString()
+    note?: string;
+}
 
 export class CreateHealthRecordDTO {
-
-    @ApiProperty({ description: 'ID khối lớp', example: '64faeaaeb44c9e2f12c157b1' })
+    @ApiProperty({ description: 'ID học sinh', example: '64faeaaeb44c9e2f12c157b1' })
     @IsNotEmpty()
     @IsMongoId()
     studentId: string;
@@ -50,26 +81,26 @@ export class CreateHealthRecordDTO {
 
     @ApiPropertyOptional({
         description: 'Lịch sử tiêm chủng',
-        example: ['BCG', 'Sởi', 'Viêm gan B'],
-        type: [String],
+        type: [VaccinationHistoryDto],
     })
     @IsOptional()
     @IsArray()
-    @IsString({ each: true })
-    vaccinationHistory?: string[];
+    @ValidateNested({ each: true })
+    @Type(() => VaccinationHistoryDto)
+    vaccinationHistory?: VaccinationHistoryDto[];
 
     @ApiProperty({ example: '2024-2025', description: 'Năm học' })
     @IsNotEmpty()
     @IsString()
     schoolYear: string;
 
-    @ApiProperty({ example: '100cm', description: 'Chiều cao' })
+    @ApiProperty({ example: 100, description: 'Chiều cao (cm)' })
     @IsNotEmpty()
-    @IsString()
-    height: string;
+    @IsNumber()
+    height: number;
 
-    @ApiProperty({ example: '20kg', description: 'Cân nặng' })
+    @ApiProperty({ example: 20, description: 'Cân nặng (kg)' })
     @IsNotEmpty()
-    @IsString()
-    weight: string;
+    @IsNumber()
+    weight: number;
 }
