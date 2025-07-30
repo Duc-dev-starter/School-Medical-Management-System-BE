@@ -25,6 +25,9 @@ export class MedicineSubmission {
     @Prop({ default: 'pending', enum: ['pending', 'approved', 'rejected', 'completed'] })
     status: string;
 
+    @Prop()
+    image: string;
+
     @Prop({ default: false })
     isDeleted: boolean;
 }

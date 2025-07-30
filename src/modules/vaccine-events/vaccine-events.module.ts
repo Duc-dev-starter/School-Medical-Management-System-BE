@@ -18,6 +18,7 @@ import { VaccineType, VaccineTypeSchema } from '../vaccine-type/vaccine-types.sc
 import { HealthRecord, HealthRecordSchema } from '../health-records/health-records.schema';
 import { VaccineTypesModule } from '../vaccine-type/vaccine-types.module';
 import { HealthRecordsModule } from '../health-records/health-records.module';
+import { MedicalCheckEvent, MedicalCheckEventSchema } from '../medical-check-events/medical-check-events.schema';
 
 @Module({
     imports: [
@@ -29,6 +30,7 @@ import { HealthRecordsModule } from '../health-records/health-records.module';
         { name: VaccineRegistration.name, schema: VaccineRegistrationSchema },
         { name: VaccineType.name, schema: VaccineTypeSchema },
         { name: HealthRecord.name, schema: HealthRecordSchema },
+        { name: MedicalCheckEvent.name, schema: MedicalCheckEventSchema },
         ]),
         BullModule.registerQueue({
             name: 'mailQueue',

@@ -16,6 +16,7 @@ import { Queue } from 'bull';
 import { formatDateTime } from 'src/utils/helpers';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { VaccineEvent, VaccineEventDocument } from '../vaccine-events/vaccine-events.schema';
 
 
 @Injectable()
@@ -38,6 +39,9 @@ export class MedicalCheckEventsService {
 
         @InjectModel(MedicalCheckRegistration.name)
         private medicalCheckRegistrationModel: Model<MedicalCheckRegistrationDocument>,
+
+        @InjectModel(VaccineEvent.name)
+        private vaccineEventModel: Model<VaccineEventDocument>,
 
 
         @Inject(CACHE_MANAGER)
@@ -72,6 +76,24 @@ export class MedicalCheckEventsService {
 
 
     async create(payload: CreateMedicalCheckEventDTO, user: IUser): Promise<MedicalCheckEvent> {
+        const startOfDay = new Date(payload.eventDate);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(payload.eventDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const vaccineEventSameDay = await this.vaccineEventModel.findOne({
+            eventDate: { $gte: startOfDay, $lte: endOfDay },
+            isDeleted: false,
+        });
+
+        if (vaccineEventSameDay) {
+            throw new CustomHttpException(
+                HttpStatus.CONFLICT,
+                'Đã có sự kiện tiêm vaccine vào ngày này, không thể tạo thêm sự kiện khám sức khỏe.'
+            );
+        }
+
         const exists = await this.medicalCheckEventModel.findOne({ eventName: payload.eventName, isDeleted: false });
         if (exists) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Tên sự kiện đã tồn tại');

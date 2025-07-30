@@ -17,6 +17,7 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ExtendedChangeStreamDocument } from 'src/common/types/extendedChangeStreamDocument.interface';
 import { HealthRecord, HealthRecordDocument } from '../health-records/health-records.schema';
 import { VaccineType } from '../vaccine-type/vaccine-types.schema';
+import { MedicalCheckEvent } from '../medical-check-events/medical-check-events.schema';
 
 @Injectable()
 export class VaccineEventServices implements OnModuleInit {
@@ -29,6 +30,7 @@ export class VaccineEventServices implements OnModuleInit {
         @InjectModel(VaccineType.name) private vaccineTypeModel: Model<GradeDocument>,
         @InjectModel(HealthRecord.name) private healthRecordModel: Model<HealthRecordDocument>,
         @InjectModel(VaccineRegistration.name) private vaccineRegistrationModel: Model<VaccineRegistration>,
+        @InjectModel(MedicalCheckEvent.name) private medicalCheckModel: Model<MedicalCheckEvent>,
         @InjectQueue('mailQueue') private readonly mailQueue: Queue,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
@@ -66,6 +68,25 @@ export class VaccineEventServices implements OnModuleInit {
     }
 
     async create(payload: CreateVaccineEventDTO): Promise<VaccineEvent> {
+
+        const startOfDay = new Date(payload.eventDate);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(payload.eventDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const medicalCheckEventSameDay = await this.medicalCheckModel.findOne({
+            eventDate: { $gte: startOfDay, $lte: endOfDay },
+            isDeleted: false,
+        });
+
+        if (medicalCheckEventSameDay) {
+            throw new CustomHttpException(
+                HttpStatus.CONFLICT,
+                'Đã có sự kiện tiêm vaccine vào ngày này, không thể tạo thêm sự kiện khám sức khỏe.'
+            );
+        }
+
         const existing = await this.vaccineEventModel.findOne({
             title: payload.title,
             isDeleted: false,

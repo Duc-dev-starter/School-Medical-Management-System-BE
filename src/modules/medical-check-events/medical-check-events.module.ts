@@ -14,6 +14,7 @@ import { MailModule } from 'src/common/modules/mail.module';
 import { GradesModule } from '../grades/grades.module';
 import { MedicalCheckRegistration, MedicalCheckRegistrationSchema } from '../medical-check-registrations/medical-check-registrations.schema';
 import { MedicalCheckRegistrationsModule } from '../medical-check-registrations/medical-check-registrations.module';
+import { VaccineEvent, VaccineEventSchema } from '../vaccine-events/vaccine-events.schema';
 
 @Module({
     imports: [
@@ -23,6 +24,7 @@ import { MedicalCheckRegistrationsModule } from '../medical-check-registrations/
         { name: Class.name, schema: ClassSchema },
         { name: Grade.name, schema: GradeSchema },
         { name: MedicalCheckRegistration.name, schema: MedicalCheckRegistrationSchema },
+        { name: VaccineEvent.name, schema: VaccineEventSchema },
         ]),
         BullModule.registerQueue({
             name: 'mailQueue',

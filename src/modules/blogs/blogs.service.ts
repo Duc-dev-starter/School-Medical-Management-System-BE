@@ -201,7 +201,13 @@ export class BlogsService implements OnModuleInit {
         { description: { $regex: query, $options: 'i' } },
       ];
     }
-    if (categoryId?.trim()) filters.categoryId = categoryId;
+    if (categoryId?.trim()) {
+      if (Types.ObjectId.isValid(categoryId)) {
+        filters.categoryId = new Types.ObjectId(categoryId.trim());
+      } else {
+        throw new Error('Invalid categoryId');
+      }
+    }
     if (userId?.trim()) filters.userId = userId;
 
     const totalItems = await this.blogModel.countDocuments(filters);
