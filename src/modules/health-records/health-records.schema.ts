@@ -63,3 +63,14 @@ export class HealthRecord {
 }
 
 export const HealthRecordSchema = SchemaFactory.createForClass(HealthRecord);
+
+HealthRecordSchema.virtual('vaccinationHistory.vaccineType', {
+    ref: 'VaccineType',
+    localField: 'vaccinationHistory.vaccineTypeId',
+    foreignField: '_id',
+    justOne: true,
+});
+
+// Kích hoạt virtual khi trả JSON hoặc object
+HealthRecordSchema.set('toObject', { virtuals: true });
+HealthRecordSchema.set('toJSON', { virtuals: true });

@@ -90,7 +90,11 @@ export class HealthRecordsService implements OnModuleInit {
             return cached as HealthRecord;
         }
 
-        const record = await this.healthRecordModel.findOne({ _id: id, isDeleted: false }).lean();
+        const record = await this.healthRecordModel
+            .findOne({ _id: id, isDeleted: false })
+            .setOptions({ strictPopulate: false })
+            .populate('vaccinationHistory.vaccineType')
+            .lean();
 
         if (!record) {
             throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy hồ sơ');
@@ -98,9 +102,9 @@ export class HealthRecordsService implements OnModuleInit {
 
         await this.cacheManager.set(cacheKey, record, 60);
         console.log('✅ Đã lưu healthRecord vào cache');
-
         return record;
     }
+
 
     async update(id: string, updateData: UpdateHealthRecordDTO, user: IUser): Promise<HealthRecord> {
         const record = await this.healthRecordModel.findById(id);
