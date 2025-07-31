@@ -102,7 +102,7 @@ export class StudentsService implements OnModuleInit {
                     to: parent.email,
                     subject: 'Thông báo mã học sinh',
                     html: `<p>Xin chào phụ huynh,</p>
-                        <p>Mã học sinh của con bạn là: <b>${savedStudent.studentCode}</b></p>
+                        <p>Mã học sinh của học sinh ${payload.fullName} là: <b>${savedStudent.studentCode}</b></p>
                         <p>Trân trọng!</p>`,
                 });
             }

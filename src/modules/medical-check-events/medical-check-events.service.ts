@@ -193,6 +193,85 @@ export class MedicalCheckEventsService {
             }
         }
 
+        /** 
+            * --------- KHÁM BÙ CHO HỌC SINH KHÁC KHỐI, BỊ LỠ HẸN LẦN TRƯỚC ----------
+            * Truy vấn các event trước đó ở các khối khác cùng năm học, có các đơn đăng ký expired
+            * Tạo đơn đăng ký mới ở event hiện tại cho các học sinh này, gửi mail cho phụ huynh
+            */
+        // 1. Truy vấn các medicalCheckEvent trước đó, KHÁC KHỐI hiện tại, cùng schoolYear
+        const prevEvents = await this.medicalCheckEventModel.find({
+            gradeId: { $ne: gradeId }, // khác khối hiện tại
+            schoolYear: payload.schoolYear,
+            isDeleted: false,
+            eventDate: { $lt: new Date(payload.eventDate) }
+        }).lean();
+        const prevEventIds = prevEvents.map(ev => ev._id);
+
+        // 2. Lấy danh sách đơn đăng ký bị miss (expired) ở các event trước đó
+        const missedRegistrations = await this.medicalCheckRegistrationModel.find({
+            eventId: { $in: prevEventIds },
+            status: 'expired',
+            isDeleted: false,
+        }).lean();
+
+        // 3. Tạo đơn đăng ký mới cho các học sinh bị miss này ở event mới, gửi mail cho phụ huynh
+        for (const reg of missedRegistrations) {
+            // Kiểm tra nếu học sinh đã có đơn ở event này thì bỏ qua
+            const alreadyExists = await this.medicalCheckRegistrationModel.findOne({
+                eventId: savedEvent._id,
+                studentId: reg.studentId,
+                parentId: reg.parentId,
+                isDeleted: false
+            });
+            if (alreadyExists) continue;
+
+            // Gửi mail cho phụ huynh học sinh bị miss
+            const parent = await this.userModel.findOne({ _id: reg.parentId, isDeleted: false }).lean();
+            const student = await this.studentModel.findOne({ _id: reg.studentId, isDeleted: false }).lean();
+            if (parent?.email && student?.fullName) {
+                const subject = 'Khám bù cho học sinh bị lỡ hẹn';
+                const html = `
+<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#fffbe9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #ffe4b5;">
+  <h2 style="color:#db7c26;">Khám sức khỏe bù: ${payload.eventName}</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Mô tả:</b></td>
+      <td style="padding:6px 0;">${payload.description}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
+      <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
+      <td style="padding:6px 0;">${payload.location}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
+      <td style="padding:6px 0;">${student.fullName}</td>
+    </tr>
+  </table>
+  <p style="margin:24px 0 0 0;font-size:16px;color:#333;text-align:center;">
+    <b>Học sinh đã bị lỡ khám ở đợt trước. Vui lòng kiểm tra lại thông tin và xác nhận đăng ký khám sức khỏe lần này!</b>
+  </p>
+</div>
+`;
+                await this.mailQueue.add('send-vaccine-mail', {
+                    to: parent.email,
+                    subject,
+                    html,
+                });
+            }
+
+            // Tạo đơn đăng ký mới ở event hiện tại với trạng thái expired
+            await this.medicalCheckRegistrationModel.create({
+                parentId: reg.parentId,
+                studentId: reg.studentId,
+                eventId: savedEvent._id,
+                status: 'expired',
+                schoolYear: payload.schoolYear,
+            });
+        }
 
         return savedEvent;
     }

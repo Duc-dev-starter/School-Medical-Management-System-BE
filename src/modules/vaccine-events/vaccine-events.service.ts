@@ -112,6 +112,8 @@ export class VaccineEventServices implements OnModuleInit {
             vaccineTypeId: new Types.ObjectId(payload.vaccineTypeId),
         });
 
+
+
         const savedEvent = await event.save();
         const gradeId = new Types.ObjectId(payload.gradeId);
 
@@ -189,6 +191,89 @@ export class VaccineEventServices implements OnModuleInit {
                 }
             }
         }
+
+        /**
+    * ------- TẠO ĐƠN ĐĂNG KÝ CHO HỌC SINH KHỐI KHÁC BỊ MISS VACCINE (KHÁM BÙ) -------
+    * Chỉ lấy các event trước đó KHÁC KHỐI, cùng năm học, cùng loại vaccine (vaccineTypeId),
+    * tìm các đơn đăng ký bị miss (expired) để tạo đăng ký mới ở event hiện tại, gửi mail cho phụ huynh.
+    */
+        // 1. Các event vaccine trước đó (khác khối, cùng năm học, cùng loại vaccine)
+        const prevEvents = await this.vaccineEventModel.find({
+            gradeId: { $ne: gradeId }, // khác khối hiện tại
+            schoolYear: payload.schoolYear,
+            vaccineTypeId: new Types.ObjectId(payload.vaccineTypeId),
+            isDeleted: false,
+            eventDate: { $lt: new Date(payload.eventDate) }
+        }).lean();
+        const prevEventIds = prevEvents.map(ev => ev._id);
+
+        // 2. Lấy các đơn đăng ký bị miss (expired)
+        const missedRegistrations = await this.vaccineRegistrationModel.find({
+            eventId: { $in: prevEventIds },
+            status: 'expired',
+            isDeleted: false,
+        }).lean();
+
+        // 3. Tạo đăng ký mới ở event hiện tại cho học sinh bị miss, gửi mail cho phụ huynh
+        for (const reg of missedRegistrations) {
+            // Kiểm tra nếu đã có đơn đăng ký ở event hiện tại thì bỏ qua
+            const alreadyExists = await this.vaccineRegistrationModel.findOne({
+                eventId: savedEvent._id,
+                studentId: reg.studentId,
+                parentId: reg.parentId,
+                isDeleted: false
+            });
+            if (alreadyExists) continue;
+
+            // Gửi mail cho phụ huynh học sinh bị miss
+            const parent = await this.userModel.findOne({ _id: reg.parentId, isDeleted: false }).lean();
+            const student = await this.studentModel.findOne({ _id: reg.studentId, isDeleted: false }).lean();
+            if (parent?.email && student?.fullName) {
+                const subject = 'Tiêm vaccine bù cho học sinh bị lỡ hẹn';
+                const html = `
+<div style="max-width:480px;margin:0 auto;padding:24px 16px;background:#fffbe9;border-radius:8px;font-family:Arial,sans-serif;border:1px solid #ffe4b5;">
+  <h2 style="color:#db7c26;">Tiêm vaccine bù: ${payload.title}</h2>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Loại vaccine:</b></td>
+      <td style="padding:6px 0;">${vaccineType?.name || 'Không xác định'}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Thời gian:</b></td>
+      <td style="padding:6px 0;">${formatDateTime(payload.startRegistrationDate)} - ${formatDateTime(payload.endRegistrationDate)}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Địa điểm:</b></td>
+      <td style="padding:6px 0;">${payload.location}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#555;"><b>Học sinh:</b></td>
+      <td style="padding:6px 0;">${student.fullName}</td>
+    </tr>
+  </table>
+  <p style="margin:16px 0 24px 0;font-size:16px;color:#333;">
+    <b>Học sinh đã bị lỡ tiêm vaccine ở đợt trước. Vui lòng kiểm tra lại thông tin và xác nhận đăng ký tiêm vaccine lần này!</b>
+  </p>
+</div>
+`;
+                await this.mailQueue.add('send-vaccine-mail', {
+                    to: parent.email,
+                    subject,
+                    html,
+                });
+            }
+
+            // Tạo đăng ký vaccine mới ở event hiện tại với trạng thái expired
+            await this.vaccineRegistrationModel.create({
+                parentId: reg.parentId,
+                studentId: reg.studentId,
+                eventId: savedEvent._id,
+                status: 'expired',
+                schoolYear: payload.schoolYear,
+            });
+        }
+
+
 
         return savedEvent;
     }
