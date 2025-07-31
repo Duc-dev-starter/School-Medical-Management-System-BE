@@ -60,7 +60,7 @@ MedicalCheckAppointmentSchema.virtual('student', {
 });
 
 MedicalCheckAppointmentSchema.virtual('event', {
-    ref: 'VaccineEvent',
+    ref: 'MedicalCheckEvent',
     localField: 'eventId',
     foreignField: '_id',
     justOne: true
