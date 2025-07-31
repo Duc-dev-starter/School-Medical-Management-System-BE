@@ -13,6 +13,7 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiExtraModels,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -102,14 +103,15 @@ export class UsersController {
   @ApiOperation({ summary: 'Tìm kiếm người dùng có phân trang' })
   @ApiParam({ name: 'pageNum', example: 1, description: 'Trang hiện tại' })
   @ApiParam({ name: 'pageSize', example: 10, description: 'Số lượng bản ghi mỗi trang' })
-  @ApiQuery({ name: 'query', required: false, description: 'Từ khóa tìm kiếm (họ tên, email, số điện thoại)' })
-  @ApiQuery({ name: 'role', required: false, enum: Role, description: 'Lọc theo vai trò' })
+
+  @ApiExtraModels(SearchUserDTO)
+  @ApiQuery({ type: SearchUserDTO })
+
   @ApiResponse({ status: 200, description: 'Danh sách người dùng phù hợp với tìm kiếm' })
   async searchUsers(@Query() params: SearchUserDTO) {
     const result = await this.usersService.searchUsers(params);
     return result;
   }
-
 
   @Get(':id')
   @Public()
