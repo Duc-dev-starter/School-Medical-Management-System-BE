@@ -40,7 +40,6 @@ export class MedicalEventsController {
     @ApiQuery({ name: 'pageNum', required: false, example: 1, description: 'Trang hiện tại' })
     @ApiQuery({ name: 'pageSize', required: false, example: 10, description: 'Số lượng bản ghi mỗi trang' })
     @ApiQuery({ name: 'query', required: false })
-    @ApiQuery({ name: 'parentId', required: false })
     @ApiQuery({ name: 'studentId', required: false })
     @ApiQuery({ name: 'schoolNurseId', required: false })
     @Public()
