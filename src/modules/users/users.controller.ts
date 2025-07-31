@@ -29,6 +29,7 @@ import { formatResponse } from 'src/utils';
 import { UserWithoutPassword } from './users.interface';
 import { Student } from '../students/students.schema';
 import { UpdatePermissionDTO } from './dto/permission.dto';
+import { UpdateIsDeletedDTO } from './dto/isDeleted.dto';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -214,6 +215,19 @@ export class UsersController {
     @Body() body: UpdatePermissionDTO
   ) {
     const item = await this.usersService.setFullPermission(id, body.fullPermission);
+    return formatResponse<User>(item);
+  }
+
+  @Patch(':id/is-deleted')
+  @ApiOperation({ summary: 'Cập nhật quyền isDeleted cho user' })
+  @ApiParam({ name: 'id', description: 'ID người dùng' })
+  @ApiBody({ type: UpdateIsDeletedDTO })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công', type: User })
+  async setIsDeleted(
+    @Param('id') id: string,
+    @Body() body: UpdateIsDeletedDTO
+  ) {
+    const item = await this.usersService.setDeletedUser(id, body.isDeleted);
     return formatResponse<User>(item);
   }
 

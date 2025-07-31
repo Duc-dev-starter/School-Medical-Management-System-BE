@@ -324,4 +324,15 @@ export class UsersService {
     return user;
   }
 
+  async setDeletedUser(userId: string, isDeleted: boolean): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy người dùng');
+    }
+
+    user.isDeleted = isDeleted;
+    await user.save();
+    return user;
+  }
+
 }
