@@ -56,6 +56,12 @@ export class CreateMedicineSubmissionDTO {
     @IsNotEmpty()
     parentId: string;
 
+    @ApiProperty({ description: 'Hình ảnh' })
+    @IsString()
+    @IsNotEmpty()
+    image: string;
+
+
     @ApiProperty({ description: 'ID học sinh', type: String })
     @IsMongoId()
     @IsNotEmpty()
