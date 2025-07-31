@@ -79,6 +79,7 @@ export class MedicineSubmissionsService implements OnModuleInit {
             studentId: new Types.ObjectId(payload.studentId),
             schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
             shiftSendMedicine: payload.shiftSendMedicine,
+            image: payload.image,
             medicines: payload.medicines.map((med) => ({
                 name: med.name,
                 dosage: med.dosage,
