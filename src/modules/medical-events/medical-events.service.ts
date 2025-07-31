@@ -138,13 +138,38 @@ export class MedicalEventsService implements OnModuleInit {
         medicalSupplies.push(supply);
       }
     }
+
+    const studentId = Types.ObjectId.isValid(payload.studentId)
     const dataToSave = {
       studentId: new Types.ObjectId(payload.studentId),
       schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
+      parentId: parentId,
+      eventName: payload.eventName,
+      description: payload.description,
+      initialCondition: payload.initialCondition,
+      firstAid: payload.firstAid,
+      actionTaken: payload.actionTaken,
+      actions: payload.actions?.map(a => ({
+        ...a,
+        performedBy: a.performedBy,
+        time: a.time ? new Date(a.time) : undefined
+      })) || [],
+      medicinesUsed: payload.medicinesUsed?.map(m => ({
+        medicineId: new Types.ObjectId(m.medicineId),
+        quantity: m.quantity
+      })) || [],
+      medicalSuppliesUsed: payload.medicalSuppliesUsed?.map(s => ({
+        supplyId: new Types.ObjectId(s.supplyId),
+        quantity: s.quantity
+      })) || [],
+      status: payload.status,
       parentContactStatus: payload.parentContactStatus || 'not_contacted',
-      actions: payload.actions || [],
-      ...payload,
-
+      parentContactedAt: payload.parentContactedAt,
+      leaveMethod: payload.leaveMethod,
+      leaveTime: payload.leaveTime ? new Date(payload.leaveTime) : undefined,
+      pickedUpBy: payload.pickedUpBy,
+      images: payload.images,
+      notes: payload.notes,
     };
     const savedEvent = await this.medicalEventModel.create(dataToSave);
 
