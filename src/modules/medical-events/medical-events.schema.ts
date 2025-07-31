@@ -41,7 +41,7 @@ export class MedicalEvent {
         ],
         default: []
     })
-    actions: { time: Date; description: string; performedBy: Types.ObjectId }[];
+    actions: { time: Date; description: string; performedBy: string }[];
 
     @Prop({
         type: [
