@@ -61,6 +61,14 @@ export class CreateMedicineSubmissionDTO {
     @IsNotEmpty()
     image: string;
 
+    @ApiProperty({
+        description: 'Ca uống thuốc',
+        example: 'morning',
+        enum: TIME_SHIFT_VALUES,
+    })
+    @IsEnum(TIME_SHIFT_VALUES)
+    shiftSendMedicine: TimeShiftType;
+
 
     @ApiProperty({ description: 'ID học sinh', type: String })
     @IsMongoId()

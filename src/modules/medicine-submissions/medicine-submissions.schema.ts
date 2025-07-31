@@ -4,6 +4,7 @@ import { User } from '../users/users.schema';
 import { HealthRecord } from '../health-records/health-records.schema';
 import { COLLECTION_NAME } from 'src/common/constants/collection.constant';
 import { MedicineSubmissionDetail, MedicineSubmissionDetailSchema } from '../medicine-detail/medicine-details.schema';
+import { TIME_SHIFT_VALUES, TimeShiftType } from 'src/common/enums/medicine.enum';
 
 export type MedicineSubmissionDocument = MedicineSubmission & Document;
 
@@ -24,6 +25,9 @@ export class MedicineSubmission {
 
     @Prop({ default: 'pending', enum: ['pending', 'approved', 'rejected', 'completed'] })
     status: string;
+
+    @Prop({ required: true, enum: TIME_SHIFT_VALUES })
+    shiftSendMedicine: TimeShiftType;
 
     @Prop()
     image: string;

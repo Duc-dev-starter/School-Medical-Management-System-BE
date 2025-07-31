@@ -57,18 +57,43 @@ export class AppointmentService {
     }
 
     async create(dto: CreateParentNurseAppointmentDTO, parent: IUser) {
-        // Kiểm tra quyền, kiểm tra học sinh thuộc phụ huynh...
-        // Tạo mới với status pending, nurseId null
-        const existedParent = await this.userModel.findOne({ _id: parent._id, role: 'parent', isDeleted: false });
+        const appointmentDate = new Date(dto.appointmentTime);
+
+        // Xác định ngày bắt đầu và kết thúc trong ngày của lịch hẹn
+        const startOfDay = new Date(appointmentDate);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(appointmentDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const allAppointmentsToday = await this.appointmentModel.countDocuments({
+            isDeleted: false,
+            appointmentTime: { $gte: startOfDay, $lte: endOfDay },
+        });
+
+        if (allAppointmentsToday >= 5) {
+            throw new CustomHttpException(
+                HttpStatus.FORBIDDEN,
+                'Hệ thống tạm thời không nhận thêm lịch ngày hôm nay'
+            );
+        }
+
+        const existedParent = await this.userModel.findOne({
+            _id: parent._id,
+            role: 'parent',
+            isDeleted: false,
+        });
         if (!existedParent) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy phụ huynh');
         }
 
-        const existedStudent = await this.studentModel.findOne({ _id: dto.studentId, isDeleted: false });
+        const existedStudent = await this.studentModel.findOne({
+            _id: dto.studentId,
+            isDeleted: false,
+        });
         if (!existedStudent) {
             throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Không tìm thấy học sinh');
         }
-
 
         const existed = await this.appointmentModel.findOne({
             studentId: dto.studentId,
@@ -79,6 +104,26 @@ export class AppointmentService {
         if (existed) {
             throw new CustomHttpException(HttpStatus.CONFLICT, 'Lịch đã tồn tại');
         }
+
+        const twoHoursBefore = new Date(appointmentDate);
+        twoHoursBefore.setHours(twoHoursBefore.getHours() - 2);
+
+        const twoHoursAfter = new Date(appointmentDate);
+        twoHoursAfter.setHours(twoHoursAfter.getHours() + 2);
+
+        const parentAppointmentsNear = await this.appointmentModel.findOne({
+            parentId: parent._id,
+            isDeleted: false,
+            appointmentTime: { $gte: twoHoursBefore, $lte: twoHoursAfter },
+        });
+
+        if (parentAppointmentsNear) {
+            throw new CustomHttpException(
+                HttpStatus.FORBIDDEN,
+                'Các đơn trong ngày của bạn phải cách nhau ít nhất 2 giờ'
+            );
+        }
+
         return this.appointmentModel.create({
             ...dto,
             studentId: new Types.ObjectId(dto.studentId),
@@ -87,7 +132,6 @@ export class AppointmentService {
             status: 'pending',
             isDeleted: false,
         });
-
     }
 
     async approveAndAssignNurse(id: string, nurseId: string, manager: IUser) {
