@@ -140,6 +140,8 @@ export class MedicalEventsService implements OnModuleInit {
     }
     const dataToSave = {
       ...payload,
+      studentId: new Types.ObjectId(payload.studentId),
+      schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
       parentContactStatus: payload.parentContactStatus || 'not_contacted',
       actions: payload.actions || [],
     };
@@ -253,12 +255,31 @@ export class MedicalEventsService implements OnModuleInit {
 
 
     if (query?.trim()) filters.eventName = { $regex: query, $options: 'i' };
-    if (studentId?.trim()) filters.studentId = studentId.trim();
-    if (parentId?.trim()) filters.parentId = parentId.trim();
-    if (schoolNurseId?.trim()) filters.schoolNurseId = schoolNurseId.trim();
+    if (parentId?.trim()) {
+      if (Types.ObjectId.isValid(parentId)) {
+        filters.parentId = new Types.ObjectId(parentId.trim());
+      } else {
+        throw new Error('Invalid parentId');
+      }
+    }
+
+    if (studentId?.trim()) {
+      if (Types.ObjectId.isValid(studentId)) {
+        filters.studentId = new Types.ObjectId(studentId.trim());
+      } else {
+        throw new Error('Invalid studentId');
+      }
+    }
+
+    if (schoolNurseId?.trim()) {
+      if (Types.ObjectId.isValid(schoolNurseId)) {
+        filters.schoolNurseId = new Types.ObjectId(schoolNurseId.trim());
+      } else {
+        throw new Error('Invalid schoolNurseId');
+      }
+    }
     if (medicinesId?.length) filters.medicinesId = { $in: medicinesId.filter(Boolean) };
     if (medicalSuppliesId?.length) filters.medicalSuppliesId = { $in: medicalSuppliesId.filter(Boolean) };
-    if (params.severityLevel) filters.severityLevel = params.severityLevel;
     if (params.parentContactStatus) filters.parentContactStatus = params.parentContactStatus;
 
 

@@ -19,12 +19,6 @@ export enum MedicalEventStatus {
     TRANSFERRED = 'transferred',
 }
 
-export enum SeverityLevel {
-    MILD = 'Mild',
-    MODERATE = 'Moderate',
-    SEVERE = 'Severe',
-}
-
 export enum LeaveMethod {
     NONE = 'none',
     PARENT_PICKUP = 'parent_pickup',

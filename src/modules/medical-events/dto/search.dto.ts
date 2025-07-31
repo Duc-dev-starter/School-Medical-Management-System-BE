@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumber, IsArray, IsEnum, IsBooleanString } from 'class-validator';
 import { PaginationRequestModel } from 'src/common/models';
-import { ParentContactStatus, SeverityLevel } from './create.dto';
+import { ParentContactStatus } from './create.dto';
 
 export class SearchMedicalEventDTO extends PaginationRequestModel {
     @ApiPropertyOptional()
@@ -37,10 +37,6 @@ export class SearchMedicalEventDTO extends PaginationRequestModel {
     @ApiProperty({ description: 'Tìm theo ID vật tư', required: false })
     medicalSuppliesId?: string[];
 
-    @ApiPropertyOptional({ description: 'Mức độ nghiêm trọng', enum: SeverityLevel })
-    @IsOptional()
-    @IsEnum(SeverityLevel)
-    severityLevel?: SeverityLevel;
 
     @ApiPropertyOptional({ description: 'Trạng thái liên hệ phụ huynh', enum: ParentContactStatus })
     @IsOptional()

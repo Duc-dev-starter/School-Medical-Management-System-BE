@@ -13,9 +13,6 @@ export class MedicalEvent {
     @Prop({ type: Types.ObjectId, ref: Student.name })
     studentId: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: User.name })
-    parentId: Types.ObjectId;
-
     @Prop({ type: Types.ObjectId, ref: COLLECTION_NAME.USER })
     schoolNurseId: Types.ObjectId;
 
