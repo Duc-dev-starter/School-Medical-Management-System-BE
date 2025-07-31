@@ -121,8 +121,20 @@ export class VaccineAppoimentsService implements OnModuleInit {
         if (query?.trim()) {
             filters.bloodPressure = { $regex: query, $options: 'i' };
         }
-        if (eventId?.trim()) filters.eventId = eventId;
-        if (studentId?.trim()) filters.studentId = studentId;
+        if (eventId?.trim()) {
+            if (Types.ObjectId.isValid(eventId)) {
+                filters.eventId = new Types.ObjectId(eventId.trim());
+            } else {
+                throw new Error('Invalid eventId');
+            }
+        }
+        if (studentId?.trim()) {
+            if (Types.ObjectId.isValid(studentId)) {
+                filters.studentId = new Types.ObjectId(studentId.trim());
+            } else {
+                throw new Error('Invalid studentId');
+            }
+        }
         if (checkBy?.trim()) filters.checkedBy = checkBy;
         if (schoolYear?.trim()) filters.schoolYear = schoolYear;
         if (status?.trim()) {

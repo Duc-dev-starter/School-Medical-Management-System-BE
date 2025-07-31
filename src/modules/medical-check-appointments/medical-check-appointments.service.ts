@@ -105,10 +105,24 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
             filters.status = status.trim();
         }
 
+        if (studentId?.trim()) {
+            if (Types.ObjectId.isValid(studentId)) {
+                filters.eventId = new Types.ObjectId(studentId.trim());
+            } else {
+                throw new Error('Invalid studentId');
+            }
+        }
+
+        if (eventId?.trim()) {
+            if (Types.ObjectId.isValid(eventId)) {
+                filters.eventId = new Types.ObjectId(eventId.trim());
+            } else {
+                throw new Error('Invalid eventId');
+            }
+        }
+
         if (schoolYear?.trim()) filters.schoolYear = schoolYear.trim();
         if (checkedBy?.trim()) filters.checkedBy = checkedBy.trim();
-        if (studentId?.trim()) filters.studentId = studentId.trim();
-        if (eventId?.trim()) filters.eventId = eventId.trim();
 
         const totalItems = await this.medicalCheckAppointmentModel.countDocuments(filters);
         const results = await this.medicalCheckAppointmentModel
