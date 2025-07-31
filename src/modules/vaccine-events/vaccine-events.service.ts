@@ -83,7 +83,7 @@ export class VaccineEventServices implements OnModuleInit {
         if (medicalCheckEventSameDay) {
             throw new CustomHttpException(
                 HttpStatus.CONFLICT,
-                'Đã có sự kiện tiêm vaccine vào ngày này, không thể tạo thêm sự kiện khám sức khỏe.'
+                `Đã có sự kiện khám sức khỏe: ${medicalCheckEventSameDay.eventName} vào ngày này, không thể tạo thêm sự kiện khám sức khỏe.`
             );
         }
 
