@@ -78,6 +78,7 @@ export class MedicineSubmissionsService implements OnModuleInit {
             parentId: new Types.ObjectId(payload.parentId),
             studentId: new Types.ObjectId(payload.studentId),
             schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
+            shiftSendMedicine: payload.shiftSendMedicine,
             medicines: payload.medicines.map((med) => ({
                 name: med.name,
                 dosage: med.dosage,
@@ -194,7 +195,7 @@ export class MedicineSubmissionsService implements OnModuleInit {
             return cached as SearchPaginationResponseModel<any>;
         }
 
-        const { pageNum, pageSize, query, parentId, status, studentId, schoolNurseId, isDeleted } = params;
+        const { pageNum, pageSize, query, parentId, status, studentId, schoolNurseId, isDeleted, shiftSendMedicine } = params;
         const filters: any = { isDeleted: false };
 
         if (isDeleted === 'true') filters.isDeleted = true;
@@ -205,6 +206,10 @@ export class MedicineSubmissionsService implements OnModuleInit {
             filters.$or = [
                 { status: { $regex: query, $options: 'i' } },
             ];
+        }
+
+        if (shiftSendMedicine?.trim()) {
+            filters.shiftSendMedicine = new Types.ObjectId(shiftSendMedicine);
         }
 
         if (studentId?.trim()) {

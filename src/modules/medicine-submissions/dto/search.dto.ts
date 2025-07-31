@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBooleanString, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { TIME_SHIFT_VALUES, TimeShiftType } from 'src/common/enums/medicine.enum';
 import { PaginationRequestModel } from 'src/common/models';
 
 export class SearchMedicineSubmissionDTO extends PaginationRequestModel {
@@ -36,4 +37,12 @@ export class SearchMedicineSubmissionDTO extends PaginationRequestModel {
         example: 'false',
     })
     isDeleted?: string;
+
+    @ApiPropertyOptional({
+        description: 'Lọc theo ca gửi thuốc (ví dụ: morning, noon, evening)',
+        enum: TIME_SHIFT_VALUES
+    })
+    @IsOptional()
+    @IsString()
+    shiftSendMedicine?: TimeShiftType;
 }
