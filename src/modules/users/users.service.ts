@@ -100,8 +100,15 @@ export class UsersService {
         if (student.parents.some((p) => p.type === type && p.userId)) {
           throw new CustomHttpException(HttpStatus.CONFLICT, `Học sinh ${student.fullName} đã có liên kết với ${type === 'father' ? 'ba' : type === 'mother' ? 'mẹ' : 'giám hộ'}`);
         }
-        // Thêm phụ huynh vào students
-        student.parents.push({ userId: newUser._id, type, email });
+        const existingParent = student.parents.find((p) => p.type === type && p.email === email);
+
+        if (existingParent) {
+          existingParent.userId = newUser._id;
+        } else {
+          // Nếu không tồn tại thì mới thêm mới
+          student.parents.push({ userId: newUser._id, type, email });
+        }
+
         await student.save();
       }
       // Cập nhật user.studentIds
