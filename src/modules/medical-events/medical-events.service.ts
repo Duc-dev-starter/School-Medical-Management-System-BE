@@ -139,11 +139,12 @@ export class MedicalEventsService implements OnModuleInit {
       }
     }
     const dataToSave = {
-      ...payload,
       studentId: new Types.ObjectId(payload.studentId),
       schoolNurseId: new Types.ObjectId(payload.schoolNurseId),
       parentContactStatus: payload.parentContactStatus || 'not_contacted',
       actions: payload.actions || [],
+      ...payload,
+
     };
     const savedEvent = await this.medicalEventModel.create(dataToSave);
 
@@ -247,7 +248,7 @@ export class MedicalEventsService implements OnModuleInit {
       return cached;
     }
 
-    const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId, parentId, isDeleted } = params;
+    const { pageNum, pageSize, query, medicalSuppliesId, medicinesId, schoolNurseId, studentId, isDeleted } = params;
     const filters: any = { isDeleted: false };
 
     if (isDeleted === 'true') filters.isDeleted = true;
@@ -255,13 +256,7 @@ export class MedicalEventsService implements OnModuleInit {
 
 
     if (query?.trim()) filters.eventName = { $regex: query, $options: 'i' };
-    if (parentId?.trim()) {
-      if (Types.ObjectId.isValid(parentId)) {
-        filters.parentId = new Types.ObjectId(parentId.trim());
-      } else {
-        throw new Error('Invalid parentId');
-      }
-    }
+
 
     if (studentId?.trim()) {
       if (Types.ObjectId.isValid(studentId)) {
