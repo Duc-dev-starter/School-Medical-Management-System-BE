@@ -406,4 +406,16 @@ export class StudentsService implements OnModuleInit {
         await student.save();
         return student;
     }
+
+
+    async setDeletedStudent(userId: string, isDeleted: boolean): Promise<Student> {
+        const user = await this.studentModel.findById(userId);
+        if (!user) {
+            throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy học sinh');
+        }
+
+        user.isDeleted = isDeleted;
+        await user.save();
+        return user;
+    }
 }

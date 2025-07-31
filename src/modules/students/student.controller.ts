@@ -5,6 +5,7 @@ import {
     Get,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -14,7 +15,7 @@ import {
     UploadedFile,
     UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { formatResponse } from 'src/utils';
 import { CustomHttpException } from 'src/common/exceptions';
 import { Public } from 'src/common/decorators/public.decorator';
@@ -25,6 +26,7 @@ import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
 import { UnlinkParentDTO } from './dto/unlink.dto';
+import { UpdateIsDeletedDTO } from '../users/dto/isDeleted.dto';
 
 @ApiTags('Students')
 @Controller('api/students')
@@ -40,15 +42,12 @@ export class StudentsController {
         return formatResponse<Student>(result);
     }
 
-    @ApiOperation({ summary: 'Tìm kiếm học sinh có phân trang' })
     @Get('search')
     @ApiOperation({ summary: 'Tìm kiếm học sinh có phân trang' })
     @ApiQuery({ name: 'pageNum', required: false, example: 1, description: 'Trang hiện tại' })
     @ApiQuery({ name: 'pageSize', required: false, example: 10, description: 'Số lượng bản ghi mỗi trang' })
-    @ApiQuery({ name: 'query', required: false })
-    @ApiQuery({ name: 'classId', required: false })
-    @ApiQuery({ name: 'parentId', required: false })
-
+    @ApiExtraModels(SearchStudentDTO)
+    @ApiQuery({ type: SearchStudentDTO })
     @Public()
     async findAll(@Query() query: SearchStudentDTO) {
         return this.studentService.search(query);
@@ -111,4 +110,19 @@ export class StudentsController {
         result = await this.studentService.unlinkParent(studentId, body.parentType);
         return formatResponse(result);
     }
+
+
+    @Patch(':id/is-deleted')
+    @ApiOperation({ summary: 'Cập nhật quyền isDeleted cho student' })
+    @ApiParam({ name: 'id', description: 'ID người dùng' })
+    @ApiBody({ type: UpdateIsDeletedDTO })
+    @ApiResponse({ status: 200, description: 'Cập nhật thành công', type: Student })
+    async setIsDeleted(
+        @Param('id') id: string,
+        @Body() body: UpdateIsDeletedDTO
+    ) {
+        const item = await this.studentService.setDeletedStudent(id, body.isDeleted);
+        return formatResponse<Student>(item);
+    }
+
 }
