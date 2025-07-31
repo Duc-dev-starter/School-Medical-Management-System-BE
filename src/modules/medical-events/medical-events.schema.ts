@@ -68,9 +68,6 @@ export class MedicalEvent {
     })
     medicalSuppliesUsed: { supplyId: Types.ObjectId; quantity: number }[];
 
-    @Prop({ enum: ['Mild', 'Moderate', 'Severe'], default: 'Mild' })
-    severityLevel: string;
-
     @Prop({ enum: ['treated', 'monitoring', 'transferred'], default: 'treated' })
     status: string;
 
@@ -78,7 +75,7 @@ export class MedicalEvent {
     leaveMethod: string;
 
     @Prop()
-    leaveTime: Date;
+    leaveTime?: Date;
 
     @Prop()
     pickedUpBy: string;

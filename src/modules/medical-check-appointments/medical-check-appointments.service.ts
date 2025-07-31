@@ -120,7 +120,9 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
             .populate('checkedBy')
             .populate('student')
             .populate('event')
-            .lean();
+            .exec();
+
+        console.log(results)
 
         const pageInfo = new PaginationResponseModel(pageNum, pageSize, totalItems);
         const response = new SearchPaginationResponseModel(results, pageInfo);

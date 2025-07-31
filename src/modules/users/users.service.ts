@@ -319,7 +319,7 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.NOT_FOUND, 'Không tìm thấy người dùng');
     }
 
-    user.fullPermission = !fullPermission;
+    user.fullPermission = fullPermission;
     await user.save();
     return user;
   }

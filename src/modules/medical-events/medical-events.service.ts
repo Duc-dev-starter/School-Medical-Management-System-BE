@@ -173,10 +173,6 @@ export class MedicalEventsService implements OnModuleInit {
         <td style="padding:6px 0;">${payload.actionTaken || '(Chưa có)'}</td>
       </tr>
       <tr>
-        <td style="padding:6px 0;color:#555;"><b>Mức độ nghiêm trọng:</b></td>
-        <td style="padding:6px 0;">${payload.severityLevel || '---'}</td>
-      </tr>
-      <tr>
         <td style="padding:6px 0;color:#555;"><b>Trạng thái xử lý:</b></td>
         <td style="padding:6px 0;">${payload.status || '---'}</td>
       </tr>
@@ -219,13 +215,6 @@ export class MedicalEventsService implements OnModuleInit {
               <td style="padding:6px 0;">
                 ${payload.images.map(url => `<a href="${url}" target="_blank" style="color:#1976d2;text-decoration:underline;">Xem ảnh</a>`).join(', ')}
               </td>
-            </tr>`
-          : ''
-        }
-      ${payload.severityLevel === 'Severe'
-          ? `<tr>
-              <td style="padding:6px 0;color:#d32f2f;"><b>Đánh dấu:</b></td>
-              <td style="padding:6px 0;color:#d32f2f;">Sự kiện nghiêm trọng!</td>
             </tr>`
           : ''
         }

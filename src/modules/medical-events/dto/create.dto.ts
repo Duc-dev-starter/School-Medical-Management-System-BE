@@ -145,11 +145,6 @@ export class CreateMedicalEventDto {
     @Type(() => MedicalSupplyUsageDto)
     medicalSuppliesUsed?: MedicalSupplyUsageDto[];
 
-    @ApiPropertyOptional({ description: 'Mức độ nghiêm trọng', enum: SeverityLevel, default: SeverityLevel.MILD })
-    @IsOptional()
-    @IsEnum(SeverityLevel)
-    severityLevel?: SeverityLevel;
-
     @ApiPropertyOptional({ description: 'Trạng thái xử lý', enum: MedicalEventStatus, default: MedicalEventStatus.TREATED })
     @IsOptional()
     @IsEnum(MedicalEventStatus)
