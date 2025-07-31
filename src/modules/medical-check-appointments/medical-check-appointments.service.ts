@@ -107,7 +107,7 @@ export class MedicalCheckAppointmentsService implements OnModuleInit {
 
         if (studentId?.trim()) {
             if (Types.ObjectId.isValid(studentId)) {
-                filters.eventId = new Types.ObjectId(studentId.trim());
+                filters.studentId = new Types.ObjectId(studentId.trim());
             } else {
                 throw new Error('Invalid studentId');
             }
