@@ -236,10 +236,7 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.FORBIDDEN, 'Chỉ phụ huynh mới có thể liên kết học sinh');
     }
 
-    // Lấy tất cả mã học sinh
     const studentCodes = studentParents.map((sp) => sp.studentCode);
-
-    // Lấy thông tin học sinh
     const students = await this.studentModel.find({
       studentCode: { $in: studentCodes },
       isDeleted: false,
@@ -249,47 +246,50 @@ export class UsersService {
       throw new CustomHttpException(HttpStatus.BAD_REQUEST, 'Một số mã học sinh không hợp lệ');
     }
 
-    // Kiểm tra từng học sinh chưa đủ 2 phụ huynh và chưa trùng type
     for (const { studentCode, type } of studentParents) {
       const student = students.find((s) => s.studentCode === studentCode);
       if (!student) continue;
       if (!student.parents) student.parents = [];
-      if (student.parents.length >= 2) {
-        throw new CustomHttpException(
-          HttpStatus.CONFLICT,
-          `Học sinh ${student.fullName} đã đủ số lượng phụ huynh`
+
+      // Tìm parent theo type
+      const parentIdx = student.parents.findIndex((p) => p.type === type);
+
+      if (parentIdx !== -1) {
+        // Nếu đã có parent type này, kiểm tra userId đã đúng chưa
+        if (student.parents[parentIdx].userId?.toString() === user._id.toString()) {
+          throw new CustomHttpException(
+            HttpStatus.CONFLICT,
+            `Bạn đã được liên kết với học sinh ${student.fullName} (dưới vai trò ${type})`
+          );
+        }
+        // Ghi đè userId và email
+        await this.studentModel.updateOne(
+          { studentCode, [`parents.type`]: type },
+          {
+            $set: {
+              'parents.$.userId': user._id,
+              'parents.$.email': user.email,
+            },
+          }
         );
-      }
-      if (student.parents.some((p) => p.type === type)) {
-        throw new CustomHttpException(
-          HttpStatus.CONFLICT,
-          `Học sinh ${student.fullName} đã có phụ huynh loại "${type}"`
-        );
-      }
-      // Đã liên kết rồi thì không cho liên kết lại
-      if (student.parents.some((p) => p.userId?.toString() === user._id.toString())) {
-        throw new CustomHttpException(
-          HttpStatus.CONFLICT,
-          `Bạn đã được liên kết với học sinh ${student.fullName}`
+      } else {
+        // Chưa có parent type này, push mới
+        await this.studentModel.updateOne(
+          { studentCode },
+          { $push: { parents: { userId: user._id, type, email: user.email } } }
         );
       }
     }
 
-    // Cập nhật lại mảng parents cho từng học sinh
-    for (const { studentCode, type } of studentParents) {
-      await this.studentModel.updateOne(
-        { studentCode },
-        { $push: { parents: { userId: user._id, type } } }
-      );
-    }
-
-    // Cập nhật lại studentIds trong user
+    // Cập nhật user.studentIds
     const studentIds = students.map((s) => s._id);
     await this.userModel.findByIdAndUpdate(user._id, {
       $addToSet: { studentIds: { $each: studentIds } }
     });
 
-    return students.map(s => ({
+    // Return thông tin cập nhật
+    const updatedStudents = await this.studentModel.find({ studentCode: { $in: studentCodes } }).lean();
+    return updatedStudents.map(s => ({
       fullName: s.fullName,
       studentCode: s.studentCode,
       parents: s.parents,
