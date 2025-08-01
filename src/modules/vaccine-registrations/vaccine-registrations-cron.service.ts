@@ -40,6 +40,6 @@ export class VaccineRegistrationCronService {
                 },
             },
         );
-        this.logger.log(`Đã cập nhật ${result.modifiedCount} đơn đăng ký vaccine thành 'rejected' do quá hạn.`);
+        this.logger.log(`Đã cập nhật ${result.modifiedCount} đơn đăng ký vaccine thành 'expired' do quá hạn.`);
     }
 }

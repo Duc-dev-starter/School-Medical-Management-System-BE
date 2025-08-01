@@ -40,6 +40,6 @@ export class MedicalCheckRegistrationCronService {
             },
         );
 
-        this.logger.log(`Đã cập nhật ${result.modifiedCount} đơn đăng ký thành 'rejected' do quá hạn.`);
+        this.logger.log(`Đã cập nhật ${result.modifiedCount} đơn đăng ký thành 'expired' do quá hạn.`);
     }
 }
